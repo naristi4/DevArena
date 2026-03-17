@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DevArena | Gamified Workflow Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#3713ec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#131022",
+                        "accent-gold": "#FFD700",
+                        "accent-silver": "#C0C0C0",
+                        "accent-bronze": "#CD7F32",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Header Section -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-slate-200 dark:border-primary/20 px-6 py-4 lg:px-20">
+<div class="flex items-center gap-4 text-primary">
+<div class="size-8 flex items-center justify-center bg-primary rounded-lg text-white"><span class="material-symbols-outlined">rocket_launch</span></div>
+<h2 class="text-slate-900 dark:text-white text-xl font-black leading-tight tracking-[-0.015em]">DevArena</h2>
+</div>
+<div class="flex flex-1 justify-end gap-4 items-center">
+<div class="hidden md:flex items-center bg-primary/10 px-4 py-1.5 rounded-full border border-primary/20">
+<span class="text-xs font-bold text-primary uppercase tracking-wider">Lvl 42 Senior Architect</span>
+</div>
+<div class="flex gap-2">
+<button class="flex items-center justify-center rounded-lg h-10 w-10 bg-slate-200 dark:bg-primary/20 text-slate-700 dark:text-white hover:bg-primary/40 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="flex items-center justify-center rounded-lg h-10 w-10 bg-slate-200 dark:bg-primary/20 text-slate-700 dark:text-white hover:bg-primary/40 transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 ring-2 ring-primary ring-offset-2 ring-offset-background-dark" data-alt="User profile picture showing a professional male developer" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCEjqTuhwvwFCnF4eCi_R8dFqL98xpYsiKVBSqeWLfRhDKlamy5WiuPPhVn3-7fhg6-1rs2aPi8P5mJaIB6_F2qd7MsyLptaeD1428zr-2P07C2ywpmro5jOUx1283Topza91ksKYVTjiYhAFZK-1umMcG5bYsZ75bVkj9xE6-M61YnO9-xciuGlgVC3JlVRGPmkRjdAUYit91kRbWnD-a16OIALgBeTQZBUvvRQA_J9z_g7h9c3uuvlycL4JhrtQ05Oi3ONv6gow6g");'></div>
+</div>
+</header>
+<main class="flex-1 flex flex-col lg:flex-row px-6 lg:px-20 py-8 gap-8">
+<!-- Sidebar Navigation -->
+<aside class="w-full lg:w-64 flex flex-col gap-6">
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/10 transition-all text-slate-600 dark:text-slate-400" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-semibold text-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary text-white shadow-lg shadow-primary/30" href="#">
+<span class="material-symbols-outlined">leaderboard</span>
+<span class="font-semibold text-sm">Leaderboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/10 transition-all text-slate-600 dark:text-slate-400" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span class="font-semibold text-sm">Squads</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/10 transition-all text-slate-600 dark:text-slate-400" href="#">
+<span class="material-symbols-outlined">military_tech</span>
+<span class="font-semibold text-sm">Achievements</span>
+</a>
+</nav>
+<div class="mt-auto p-4 rounded-xl bg-gradient-to-br from-primary to-blue-600 text-white">
+<p class="text-xs font-bold opacity-80 mb-2 uppercase tracking-widest">Points System</p>
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="text-xs">Task Completion</span>
+<span class="text-xs font-bold">+10 XP</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs">Bug Found</span>
+<span class="text-xs font-bold text-red-200">-5 XP</span>
+</div>
+<div class="w-full bg-white/20 h-1.5 rounded-full mt-2">
+<div class="bg-white h-full rounded-full" style="width: 75%;"></div>
+</div>
+<p class="text-[10px] mt-1 opacity-90">2,450 XP until next rank</p>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col gap-8">
+<!-- Hero Stats -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="p-6 rounded-2xl bg-white dark:bg-primary/10 border border-slate-200 dark:border-primary/20 flex flex-col gap-2">
+<div class="flex items-center justify-between mb-2">
+<span class="p-2 bg-accent-gold/20 text-accent-gold rounded-lg material-symbols-outlined">emoji_events</span>
+<span class="text-xs font-bold text-green-500">+12% vs last week</span>
+</div>
+<h3 class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Top Weekly Points</h3>
+<p class="text-3xl font-black dark:text-white">12,480 <span class="text-sm font-normal text-slate-500">XP</span></p>
+</div>
+<div class="p-6 rounded-2xl bg-white dark:bg-primary/10 border border-slate-200 dark:border-primary/20 flex flex-col gap-2">
+<div class="flex items-center justify-between mb-2">
+<span class="p-2 bg-blue-500/20 text-blue-400 rounded-lg material-symbols-outlined">bolt</span>
+<span class="text-xs font-bold text-slate-500">Avg. 4.2h / task</span>
+</div>
+<h3 class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Fastest Squad</h3>
+<p class="text-2xl font-black dark:text-white uppercase">Cyber-Knights</p>
+</div>
+<div class="p-6 rounded-2xl bg-white dark:bg-primary/10 border border-slate-200 dark:border-primary/20 flex flex-col gap-2">
+<div class="flex items-center justify-between mb-2">
+<span class="p-2 bg-purple-500/20 text-purple-400 rounded-lg material-symbols-outlined">task_alt</span>
+<span class="text-xs font-bold text-slate-500">Team Total</span>
+</div>
+<h3 class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Tasks Completed</h3>
+<p class="text-3xl font-black dark:text-white">842 <span class="text-sm font-normal text-slate-500">Resolved</span></p>
+</div>
+</section>
+<!-- Top Developers Spotlight -->
+<section>
+<h2 class="text-2xl font-black mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">military_tech</span>
+                            Top Developers of the Week
+                        </h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Silver -->
+<div class="relative flex flex-col items-center p-8 rounded-2xl bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/10 text-center order-2 md:order-1 mt-6">
+<div class="absolute -top-6 bg-accent-silver text-white size-12 rounded-full flex items-center justify-center font-black text-xl shadow-lg ring-4 ring-background-dark">2</div>
+<div class="size-20 rounded-full bg-cover bg-center mb-4 ring-4 ring-accent-silver/30" data-alt="Profile of Sarah Chen, second place developer" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBoHgR4nk7mVWyHz2WuBUuiPXt5Dbm-6qskvq24usZtO4lZe3hCH3LO_H8VM8Lh_JtpZH_N4jNFoerMnqIm8Ad1kk8YXzMmZGMi2ODRurxIKvDbq7uGtFObek_cQ32Gn3b3FQvpzun-m2TfM4SXp4Xn-D6Qw2wSC-_8riRFi8zfTFLhcoANubAFlQhGgCXDEDtbsnVRJLtO9-ojDH1P1Tz6N-0gEHUaMXQvvtgmO4NIvH0RVcKhZHyJLi-0Is9jdyBqA2VX1INvAX7n')"></div>
+<h4 class="font-bold text-lg">Sarah Chen</h4>
+<p class="text-xs text-slate-500 mb-4">Frontend Wizard</p>
+<div class="flex gap-2">
+<span class="px-3 py-1 bg-primary/10 rounded-full text-[10px] font-bold text-primary tracking-tight">34 PRs</span>
+<span class="px-3 py-1 bg-primary/10 rounded-full text-[10px] font-bold text-primary tracking-tight">2.4k XP</span>
+</div>
+</div>
+<!-- Gold -->
+<div class="relative flex flex-col items-center p-8 rounded-3xl bg-primary/20 dark:bg-primary/15 border-2 border-accent-gold text-center order-1 md:order-2 scale-105 shadow-2xl shadow-accent-gold/10">
+<div class="absolute -top-8 bg-accent-gold text-background-dark size-16 rounded-full flex items-center justify-center font-black text-2xl shadow-lg ring-4 ring-background-dark">
+<span class="material-symbols-outlined">workspace_premium</span>
+</div>
+<div class="size-24 rounded-full bg-cover bg-center mb-4 ring-4 ring-accent-gold/40" data-alt="Profile of Alex Rivers, top developer of the week" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCSHItKR_Nkf86xc174viX-fgD86ZTmcXjfdFm-Xl1tblfiRdg1OkbHCTiNSPETk1IDSqcfsGPTm_TdP5d_7MfcUGjAYtgvonkRSXAdn0e346FKS8kaXKLC-07-Snh4uJQv_AZcT0t4nUwwqqyF-hglVA39p0DAq0eN6ZDB7aD3iNK0Mf6Pp2aXzohfaapNcFnCW3eTG05K5n7SQKrm3Cp2bwEI9GPgY34n9XCEWyhAs0TbzkuABXuPdPkpusyL-QGxuG0CRNQGPy_D')"></div>
+<h4 class="font-black text-xl text-primary dark:text-white">Alex Rivers</h4>
+<p class="text-xs text-slate-600 dark:text-slate-400 mb-4">Fullstack Architect</p>
+<div class="flex gap-3">
+<span class="px-4 py-1.5 bg-accent-gold text-background-dark rounded-full text-xs font-black uppercase tracking-tighter">MVP WEEK</span>
+<span class="px-4 py-1.5 bg-primary/20 rounded-full text-xs font-bold text-primary dark:text-white tracking-tight">4.2k XP</span>
+</div>
+</div>
+<!-- Bronze -->
+<div class="relative flex flex-col items-center p-8 rounded-2xl bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/10 text-center order-3 md:order-3 mt-6">
+<div class="absolute -top-6 bg-accent-bronze text-white size-12 rounded-full flex items-center justify-center font-black text-xl shadow-lg ring-4 ring-background-dark">3</div>
+<div class="size-20 rounded-full bg-cover bg-center mb-4 ring-4 ring-accent-bronze/30" data-alt="Profile of Marcus Thorne, third place developer" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCqIfIwaxE0knZlXerpfACSzf0xYs5nYzhMtM1CpTOPiw1aXz0uWrsAAJE77Kfl3Vk6x02K_ATsmGPN4I21E-HtTd31EwenvqOEA3RHaBXNERfRA_O-81pyPYB8lqcDfkHDorZRu73gRUc6wGg9xsxjjzwwK2efrdZHG6n4-aheEcFWTz-mMUaQt0O_56HdChWdcFLoToV9sHCgMBRjMnSI75jV_ZhCim9xAo2TDOmJ-ySEuSk8Yr_cmTKEd3zE19iE-bYDncUHQy5z')"></div>
+<h4 class="font-bold text-lg">Marcus Thorne</h4>
+<p class="text-xs text-slate-500 mb-4">DevOps Specialist</p>
+<div class="flex gap-2">
+<span class="px-3 py-1 bg-primary/10 rounded-full text-[10px] font-bold text-primary tracking-tight">28 PRs</span>
+<span class="px-3 py-1 bg-primary/10 rounded-full text-[10px] font-bold text-primary tracking-tight">1.9k XP</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Leaderboard Table -->
+<section class="flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<h2 class="text-xl font-bold">Global Standings</h2>
+<div class="flex border border-slate-200 dark:border-primary/20 rounded-lg overflow-hidden">
+<button class="px-4 py-1.5 bg-primary text-white text-xs font-bold">Weekly</button>
+<button class="px-4 py-1.5 bg-transparent text-slate-500 text-xs font-bold hover:bg-primary/10">Monthly</button>
+<button class="px-4 py-1.5 bg-transparent text-slate-500 text-xs font-bold hover:bg-primary/10">All-time</button>
+</div>
+</div>
+<div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-primary/20 bg-white dark:bg-background-dark">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50 dark:bg-primary/5 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
+<th class="px-6 py-4">Rank</th>
+<th class="px-6 py-4">Developer</th>
+<th class="px-6 py-4">Squad</th>
+<th class="px-6 py-4">Tasks Done</th>
+<th class="px-6 py-4">Bugs Found</th>
+<th class="px-6 py-4 text-right">Total XP</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-200 dark:divide-primary/10">
+<tr class="hover:bg-primary/5 transition-colors">
+<td class="px-6 py-4 font-black">#4</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-cover bg-center" data-alt="Female developer profile" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDfsFtmesL_b7XM2c9akE3zCon2r4oI6BloP9QSZpui_qUJnS77N6F0goJ0ujUngWmbwxFP2sbEUVii8DBEV0Poa0bclJWIVfAxomxz6qILcE1mqjz7S9p9nZbbinh_zmbGSjOwBvyZufA1O_o7e_gSKtSCN9r2Pr17BnUFdVMU08vbKmsGeIlLzg_dzxAX1XI6ec_fujaDDq_OEIj6aU0ou26No6MMOpjErt0ajw2aoOLqCufXSCcBV43tx-XhKGmHDz5Na0-KidRt')"></div>
+<span class="font-bold">Julia Mendez</span>
+</div>
+</td>
+<td class="px-6 py-4 text-sm">Ghost-Coders</td>
+<td class="px-6 py-4">
+<span class="text-green-500 font-bold">+24</span>
+</td>
+<td class="px-6 py-4">
+<span class="text-red-500 font-bold">-2</span>
+</td>
+<td class="px-6 py-4 text-right font-black text-primary">1,820</td>
+</tr>
+<tr class="hover:bg-primary/5 transition-colors">
+<td class="px-6 py-4 font-black">#5</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-cover bg-center" data-alt="Male developer profile" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAAo3-BQ2P2VooU067rZD7COG5p_bKyKfKeR3SZKAI0Eg4cY7iMKnc7c2A0aViZXtknKLRRkAGucWKgaRhjD-ytG66Wewm4sHm8FetBumiJQISH3Xb2_gg9CJ4QP3GDGfvJnj877YVG4ASs3Tr83AyB0CM6JAVS56-vugNvB2ydQNzeT7GTS7xb9Pg4gvmrInLyJQDKHJ1GeVu_UcOZ12JPY3ERVtOP2_TD-IaHIOTDMan6dUQHgPld38rJZyJ5PbiLXZ5X36x0nafn')"></div>
+<span class="font-bold">Kevin Space</span>
+</div>
+</td>
+<td class="px-6 py-4 text-sm">Cyber-Knights</td>
+<td class="px-6 py-4">
+<span class="text-green-500 font-bold">+18</span>
+</td>
+<td class="px-6 py-4">
+<span class="text-red-500 font-bold">-1</span>
+</td>
+<td class="px-6 py-4 text-right font-black text-primary">1,745</td>
+</tr>
+<tr class="hover:bg-primary/5 transition-colors">
+<td class="px-6 py-4 font-black">#6</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-cover bg-center" data-alt="Male developer profile" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAnl5zuPiBBGCTm0KQwX4kqIS12c8lq9lbqOVe_KB1miBfJky6zi6BXChlVItcmMXHSmJMF6nRgfw1WIxms0OamedZjOuEIueFPMqknGxA1fBvkmtA6UqR-iC9T4D2mW1bAxdVH4xksbzVo_FFoe3jtkl7mqdKhnPzD31dD-y7cq4NczLzUM6bEi7X2IAO9EZF43SFY5z67zxBLGpvXB536S9dQRI5tURfhC2VL5Y3DHDjkaQwoZ6clsffBfk8Y3dNl_jZ491eqCFck')"></div>
+<span class="font-bold">Leon Wang</span>
+</div>
+</td>
+<td class="px-6 py-4 text-sm">Bit-Busters</td>
+<td class="px-6 py-4">
+<span class="text-green-500 font-bold">+21</span>
+</td>
+<td class="px-6 py-4">
+<span class="text-red-500 font-bold">-4</span>
+</td>
+<td class="px-6 py-4 text-right font-black text-primary">1,690</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+<!-- Right Sidebar / Activity Feed -->
+<aside class="hidden xl:flex w-80 flex-col gap-6">
+<div class="p-6 rounded-2xl bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/20">
+<h3 class="font-bold mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-green-500">history</span>
+                            Live Activity
+                        </h3>
+<div class="flex flex-col gap-6">
+<div class="flex gap-3 relative">
+<div class="absolute left-4 top-8 bottom-0 w-px bg-slate-200 dark:bg-primary/10"></div>
+<div class="size-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-sm">add_task</span>
+</div>
+<div>
+<p class="text-sm"><strong>Sarah Chen</strong> completed <span class="text-primary font-bold">Refactor Auth Flow</span></p>
+<span class="text-xs text-slate-500">2 mins ago • <span class="text-green-500 font-bold">+10 XP</span></span>
+</div>
+</div>
+<div class="flex gap-3 relative">
+<div class="absolute left-4 top-8 bottom-0 w-px bg-slate-200 dark:bg-primary/10"></div>
+<div class="size-8 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-red-500 text-sm">bug_report</span>
+</div>
+<div>
+<p class="text-sm"><strong>Leon Wang</strong> reported a bug in <span class="font-bold">Payment API</span></p>
+<span class="text-xs text-slate-500">14 mins ago • <span class="text-red-500 font-bold">-5 XP</span></span>
+</div>
+</div>
+<div class="flex gap-3">
+<div class="size-8 rounded-full bg-accent-gold/20 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-accent-gold text-sm">workspace_premium</span>
+</div>
+<div>
+<p class="text-sm"><strong>Alex Rivers</strong> reached rank <span class="text-primary font-bold">God Tier</span></p>
+<span class="text-xs text-slate-500">1 hour ago</span>
+</div>
+</div>
+</div>
+</div>
+<div class="p-6 rounded-2xl bg-gradient-to-br from-background-dark to-primary border border-primary/30 text-white overflow-hidden relative">
+<div class="relative z-10">
+<h3 class="font-black text-xl mb-2">Weekend Sprint</h3>
+<p class="text-xs opacity-80 mb-4 leading-relaxed">The squad with most commits this weekend wins the <strong>Golden Key</strong> achievement!</p>
+<button class="w-full py-2 bg-white text-primary font-bold rounded-lg hover:bg-slate-100 transition-colors">Join Sprint</button>
+</div>
+<span class="material-symbols-outlined absolute -bottom-4 -right-4 text-9xl opacity-10">rocket_launch</span>
+</div>
+</aside>
+</main>
+<!-- Bottom Mobile Navigation -->
+<nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-background-dark border-t border-slate-200 dark:border-primary/20 px-6 py-3 flex justify-around items-center z-50">
+<a class="text-primary" href="#"><span class="material-symbols-outlined">dashboard</span></a>
+<a class="text-slate-400" href="#"><span class="material-symbols-outlined">leaderboard</span></a>
+<a class="bg-primary p-3 rounded-full text-white -mt-10 border-4 border-background-dark" href="#"><span class="material-symbols-outlined">add</span></a>
+<a class="text-slate-400" href="#"><span class="material-symbols-outlined">groups</span></a>
+<a class="text-slate-400" href="#"><span class="material-symbols-outlined">person</span></a>
+</nav>
+</div>
+</div>
+</body></html>

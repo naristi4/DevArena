@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DevArena - Task Board</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#3713ec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#131022",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .kanban-column { min-width: 300px; width: 300px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(55, 19, 236, 0.2); border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-display">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between border-b border-slate-200 dark:border-primary/20 px-6 py-3 bg-background-light dark:bg-background-dark sticky top-0 z-50">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3 text-primary">
+<div class="size-8 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined">rocket_launch</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold tracking-tight">DevArena / Squad Alpha</h2>
+</div>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-primary text-sm font-semibold border-b-2 border-primary pb-1" href="#">Tasks</a>
+<a class="text-slate-500 dark:text-slate-400 text-sm font-medium hover:text-primary transition-colors" href="#">Cycles</a>
+<a class="text-slate-500 dark:text-slate-400 text-sm font-medium hover:text-primary transition-colors" href="#">Roadmap</a>
+<a class="text-slate-500 dark:text-slate-400 text-sm font-medium hover:text-primary transition-colors" href="#">Backlog</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+<input class="bg-slate-100 dark:bg-primary/10 border-none rounded-lg pl-9 pr-4 py-2 text-sm w-64 focus:ring-1 focus:ring-primary placeholder:text-slate-400" placeholder="Search tasks..." type="text"/>
+</div>
+<button class="p-2 rounded-lg bg-slate-100 dark:bg-primary/10 text-slate-600 dark:text-slate-300 hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+</button>
+<button class="p-2 rounded-lg bg-slate-100 dark:bg-primary/10 text-slate-600 dark:text-slate-300 hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+</button>
+<div class="size-8 rounded-full bg-primary/30 overflow-hidden border border-primary/20">
+<img alt="Profile" class="w-full h-full object-cover" data-alt="User profile avatar placeholder" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTJgNSfiOu5tlWj8mGvebnIGidabcAx_qELbBrVgzuls4DB3azREUtCNCHUQUKBSxrxDX-6qZMzUpON40FN8JuY533UjToW4dx8vdTRCeviyrLOb1oZsC4M7bwLB61s4AF2fGGjZbinpJtAINSDS3CvB2c9BS_HJN0Mm-k51mfOzI_6wqUtooythD8uP_n8wuZMx4N2esG7Mt0LCE8Pl8A5z1SdV4OKTX3hJS1EjOC86mruVzqdy5P_PQmQgLB5AVwzgLS25eTutwH"/>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- Sidebar Navigation -->
+<aside class="w-64 border-r border-slate-200 dark:border-primary/10 p-4 hidden lg:flex flex-col gap-6 bg-background-light dark:bg-background-dark/50">
+<div class="space-y-1">
+<div class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-primary/10 text-slate-600 dark:text-slate-400 cursor-pointer">
+<span class="material-symbols-outlined text-[20px]">inbox</span>
+<span class="text-sm font-medium">Inbox</span>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-primary/10 text-slate-600 dark:text-slate-400 cursor-pointer">
+<span class="material-symbols-outlined text-[20px]">assignment_turned_in</span>
+<span class="text-sm font-medium">My Issues</span>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary cursor-pointer">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1">view_kanban</span>
+<span class="text-sm font-semibold">Board</span>
+</div>
+<div class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-primary/10 text-slate-600 dark:text-slate-400 cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px]">group</span>
+<span class="text-sm font-medium">Team</span>
+</div>
+<span class="bg-primary/20 text-primary text-[10px] px-1.5 py-0.5 rounded-full">12</span>
+</div>
+</div>
+<div>
+<h3 class="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Projects</h3>
+<div class="space-y-1">
+<div class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-primary/10 text-slate-600 dark:text-slate-400 cursor-pointer">
+<div class="size-2 rounded-full bg-blue-500"></div>
+<span class="text-sm font-medium">Auth System Refactor</span>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-primary/10 text-slate-600 dark:text-slate-400 cursor-pointer">
+<div class="size-2 rounded-full bg-purple-500"></div>
+<span class="text-sm font-medium">API Documentation</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Kanban Content -->
+<main class="flex-1 flex flex-col overflow-hidden">
+<!-- Board Header -->
+<div class="px-8 pt-8 pb-4 flex items-center justify-between">
+<div>
+<h1 class="text-2xl font-bold text-slate-900 dark:text-white">Active Sprint</h1>
+<p class="text-sm text-slate-500 dark:text-slate-400">Cycle 42 • Ends in 4 days</p>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex -space-x-2">
+<img alt="Alex" class="size-8 rounded-full border-2 border-background-dark" data-alt="Assignee Alex profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDbgFoaJ0aQySOlCO0ZnDPhYCT7zJOFBgqvfNisqljln5nN3nkHzUjjW_Zn7Nl4SAfAUh12-4d9ESwBDvNLDP0Baw4MfcogtlNYX48r9WVGQRviwxZbcJklmclaxAYfSHVFhF2QJxY3ZP28VLpHbq7n2snEDvOtlyw7dvd1AqrfhkRN3sBeLWMlumSfDw85yX5zDqM7PlQu44-PnKWx2efktNglxAo0C7tHhctP8iPmmOqtr_f_hzxxazNWLwlIVOfAp0vIbxpiC0iR"/>
+<img alt="Sam" class="size-8 rounded-full border-2 border-background-dark" data-alt="Assignee Sam profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDI3W3SV3QOsfrxuDI8NwfOQ78ruZJ7Vynn4M6oo_Uzj27ldqyhdqAOiS0u0fKM5HGfONH2glkW8aQrPML-U3lRMRg4OqomA47DoWDSykfIgICBLq9W0u4ybwcbvWXGEXMkaNsz58xe6s8hRyqGtk79JiIJOghIXImEavYQsMnLeEmW0cepcAXLl75FGBXowoCL_ITEJmJgDkAu6r4M-jCmBwgcNbQv9rlaA8_SQmk6ljSNE0r5ljaBok3pighPlzEu0biN36KYJNQY"/>
+<img alt="Jordan" class="size-8 rounded-full border-2 border-background-dark" data-alt="Assignee Jordan profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAz9dtfIP3IfgwCi_6Q8RIdEZTvQ17TdrWihdr3WLstiana9cbtKUTO3Sm_tDhVXWS5jfPnZq5jw8mhtKPEhI1mvYq8bewRZa7Zc5-CTcwzJ9riC-9fxZWoOC_kdXlqY8mQ0KFKO6yZTPv7BpV_JXLI0r4z4reZreGwkNRB8Pc6wh3UGtVPBzvHKaVlfbR3-IDQ4RNqbZmmIdikGAfkcLeTPRdtvGLcF9reqJD1s3n-z2EDaBEz9zmJPMP0dr9-CdkuH7Eam1dVdxDD"/>
+<div class="size-8 rounded-full bg-primary/20 border-2 border-background-dark flex items-center justify-center text-[10px] font-bold text-primary">+4</div>
+</div>
+<button class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                        New Task
+                    </button>
+</div>
+</div>
+<!-- Board View -->
+<div class="flex-1 overflow-x-auto p-8 pt-4 custom-scrollbar">
+<div class="flex gap-6 h-full min-w-max">
+<!-- Column: Backlog -->
+<div class="kanban-column flex flex-col gap-4">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-400 text-[20px]">list_alt</span>
+<h3 class="text-sm font-bold text-slate-600 dark:text-slate-300 uppercase tracking-tight">Backlog</h3>
+<span class="text-xs bg-slate-200 dark:bg-primary/10 text-slate-500 px-2 py-0.5 rounded-full">3</span>
+</div>
+<button class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined text-[18px]">more_horiz</span></button>
+</div>
+<div class="flex flex-col gap-3">
+<!-- Card -->
+<div class="bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/10 p-4 rounded-xl shadow-sm hover:border-primary/40 transition-all group cursor-grab">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-bold text-slate-400 tracking-wider">DA-104</span>
+<span class="material-symbols-outlined text-orange-500 text-[16px]">priority_high</span>
+</div>
+<h4 class="text-sm font-semibold mb-4 leading-relaxed">Implement OAuth2 for Third-party Logins</h4>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<img alt="Dev" class="size-6 rounded-full" data-alt="Developer profile picture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_oUoHnaNeOBg7vQ7Q6AcwqV-DAP13It_vfAZq4btraAiPEGIc9JCR6K-IfPMRbtWlk3BlGxNh16L1TioPAihoe9dJXBMgk9_qvh5Ov7V2MWPGjvvYgCv9PhL4IPtsB3H_WpJVrfre-QztXdtAnXC5GNtid7oHnsNAoiLNv8i_X5YPIPXHSFofhNst0sNkAgkQPqbKscHEwVDxm2QdTrk2jQbByLhfstIO7wUX0HJOwj8KscbUbzdmpjKnj56z7U0N4x2EeUQDHVyP"/>
+<div class="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+<span>0h / 8h</span>
+</div>
+</div>
+<div class="bg-slate-100 dark:bg-primary/20 px-2 py-0.5 rounded text-[10px] font-bold text-slate-500 dark:text-primary/80">FEATURE</div>
+</div>
+</div>
+<!-- Card -->
+<div class="bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/10 p-4 rounded-xl shadow-sm hover:border-primary/40 transition-all group cursor-grab">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-bold text-slate-400 tracking-wider">DA-108</span>
+<span class="material-symbols-outlined text-blue-500 text-[16px]">low_priority</span>
+</div>
+<h4 class="text-sm font-semibold mb-4 leading-relaxed">Update User Profile Schema for Social Links</h4>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<img alt="Dev" class="size-6 rounded-full" data-alt="Developer profile picture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTN2fKwDPIB1z5EIiW6cbsBLLpT_NG_NV_euzaupu3rXA4vZeN0DHuqnEN0RbrOnwOrU94dZEcx92ed0rGSYKKURUbCxWK9bIhgL51b_I7wtSboQPKCRErNr3vnmMFhRzdFCwUuxDuNDRgmK2o-nolENubBSbQKe4sEvjsooFPHoT_NWX0KkvKFvILgCP7YZuoULBQA0rCL6rwhr062mhUD1skruf2CLQ5opSs-vB-XyyfDg2XzmwvPEks4tmVnuMQ_iyrxjFgQAjF"/>
+<div class="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+<span>0h / 3h</span>
+</div>
+</div>
+<div class="bg-slate-100 dark:bg-primary/20 px-2 py-0.5 rounded text-[10px] font-bold text-slate-500 dark:text-primary/80">TASK</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Column: In Progress -->
+<div class="kanban-column flex flex-col gap-4">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">sync</span>
+<h3 class="text-sm font-bold text-slate-600 dark:text-slate-300 uppercase tracking-tight">In Progress</h3>
+<span class="text-xs bg-primary text-white px-2 py-0.5 rounded-full">2</span>
+</div>
+<button class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined text-[18px]">more_horiz</span></button>
+</div>
+<div class="flex flex-col gap-3">
+<!-- Card -->
+<div class="bg-white dark:bg-primary/10 border-l-4 border-l-primary border-y border-r border-slate-200 dark:border-primary/20 p-4 rounded-xl shadow-md transition-all group cursor-grab">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-bold text-primary tracking-wider uppercase">Current</span>
+<span class="material-symbols-outlined text-red-500 text-[16px]" style="font-variation-settings: 'FILL' 1">keyboard_double_arrow_up</span>
+</div>
+<h4 class="text-sm font-semibold mb-4 leading-relaxed text-slate-900 dark:text-white">Refactor Authentication Layer Core</h4>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<img alt="Alex" class="size-6 rounded-full ring-2 ring-primary/30" data-alt="Assignee Alex profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGKjrhSe7amnz3_fMsz5yDlvIa2yBm02A1MRJGUZ_p4LpeAPMctXlsQDlzpnNqdcD2BwhvfltQt5oUTGoYrS-wZITiMusSY90h9UygHBShzl_QiDChJPWtrg2IV2ohXMmn_Ns5FL2Doqx_4T38U4ydVdgOajYFtCa9PxkC2wEXvCFBx1V6yMD6J6uNYJQj8XtIk6qzQ5V15V0vnpdrE9jLWbPUt-iWbPULx4xCkZ_AF_MpuEeKMwQ54z_ODBI_-V6rauP0vGjbdr5z"/>
+<div class="flex items-center gap-1.5 text-[11px] text-primary font-bold">
+<span class="material-symbols-outlined text-[14px]">timer</span>
+<span>4h / 6h</span>
+</div>
+</div>
+<div class="bg-primary/20 px-2 py-0.5 rounded text-[10px] font-bold text-primary">BUG</div>
+</div>
+</div>
+<!-- Card -->
+<div class="bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/10 p-4 rounded-xl shadow-sm hover:border-primary/40 transition-all group cursor-grab">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-bold text-slate-400 tracking-wider">DA-105</span>
+<span class="material-symbols-outlined text-orange-500 text-[16px]">priority_high</span>
+</div>
+<h4 class="text-sm font-semibold mb-4 leading-relaxed">Design New Dashboard Layout</h4>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<img alt="Jordan" class="size-6 rounded-full" data-alt="Assignee Jordan profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAiKTg4WtjvnEwYDW5-9Z12qcMbT_RBo_JFkHXZlCxAYREiCFvEkjrEM6iQJoceA6h4Wa7of6qpozqwzou96TkIqipbw_nyliOxlTLfdwduccfhBs6JwXk1D8WQkgXgsnlW6oXWAOvKu2cvFQCrK4jhk4IWlm0xga7s-4n0P6yBl6yWVe_lrL3XtNaTfZ7pHyYnG1aMC93rKAhn_plYanp0XjtuLEUYovysEo5wByT8jLR5MT2WT0LqHzml9jnHBgjVFpKFFnlAJYcS"/>
+<div class="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+<span>12h / 16h</span>
+</div>
+</div>
+<div class="bg-slate-100 dark:bg-primary/20 px-2 py-0.5 rounded text-[10px] font-bold text-slate-500 dark:text-primary/80">DESIGN</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Column: Review -->
+<div class="kanban-column flex flex-col gap-4">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-400 text-[20px]">rate_review</span>
+<h3 class="text-sm font-bold text-slate-600 dark:text-slate-300 uppercase tracking-tight">Review</h3>
+<span class="text-xs bg-slate-200 dark:bg-primary/10 text-slate-500 px-2 py-0.5 rounded-full">1</span>
+</div>
+<button class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined text-[18px]">more_horiz</span></button>
+</div>
+<div class="flex flex-col gap-3">
+<div class="bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/10 p-4 rounded-xl shadow-sm hover:border-primary/40 transition-all group cursor-grab opacity-90">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-bold text-slate-400 tracking-wider">DA-98</span>
+<span class="material-symbols-outlined text-green-500 text-[16px]">drag_handle</span>
+</div>
+<h4 class="text-sm font-semibold mb-4 leading-relaxed">Setup CI/CD Pipeline for staging</h4>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<img alt="Sam" class="size-6 rounded-full" data-alt="Assignee Sam profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDefVZR3pMt1X6RH8w0WcP0v_dqC5jqfRDLSUEGxxPdnJU-fSoqaDCuex5HEnur6kYChU_etx9fE-xMgyJNdUKijIG0LpP-dCjC4xCvNNqUVT7ZqW71y3XoRuB8mgUP30iiU-Y0YMjVMdJlz8LRC7OUxEWOiX9sWNJsVM-pe8j2hCik4gdUWjK8xhhYQHIWwgxASAYVOijp_CRtG7iVpJGOdaGgk_DAhBTHx6W9HBLtO8esaICovll3Kk3wrFcF_1pJ3K1Mtteok59J"/>
+<div class="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+<span>5h / 4h</span>
+</div>
+</div>
+<div class="bg-slate-100 dark:bg-primary/20 px-2 py-0.5 rounded text-[10px] font-bold text-slate-500 dark:text-primary/80">DEVOPS</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Column: Done -->
+<div class="kanban-column flex flex-col gap-4">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-green-500 text-[20px]">task_alt</span>
+<h3 class="text-sm font-bold text-slate-600 dark:text-slate-300 uppercase tracking-tight">Done</h3>
+<span class="text-xs bg-green-500/10 text-green-500 px-2 py-0.5 rounded-full">45</span>
+</div>
+<button class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined text-[18px]">more_horiz</span></button>
+</div>
+<div class="flex flex-col gap-3 grayscale opacity-60">
+<div class="bg-slate-100 dark:bg-primary/5 border border-slate-200 dark:border-primary/10 p-4 rounded-xl">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-bold text-slate-400 tracking-wider">DA-95</span>
+</div>
+<h4 class="text-sm font-medium mb-4 leading-relaxed line-through text-slate-400">Database migration to PostgreSQL</h4>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<img alt="Dev" class="size-6 rounded-full opacity-50" data-alt="Developer profile picture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3i1PRi-94nwQdc0WYU7xptomU8J6HCGWhk4v59RyVY8gagfIlSLBOyhvjY-XM-zhzZVCxObWJRS_quu3OFCjwNVzSy7Nkhaj-8t6Yg3b-FX9NKyFuix2Nv6frcQjZ-5739bdODpjxspFVGN7wVFXtWz3PgigPt-8WH_7HH-_TudzYnh4R-8ikXCNqxBN1HZIYDekAtlf_9EtZ2apv4ZCIPfsbYbaql0hSWyekF7KmA4Kf6r3dI1_COdE6638s2bD-B7gGrQsQhMGo"/>
+<div class="text-[11px] text-slate-400">8h / 8h</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Bottom Status Bar -->
+<footer class="h-8 border-t border-slate-200 dark:border-primary/10 bg-background-light dark:bg-background-dark/80 backdrop-blur-sm flex items-center justify-between px-6 text-[10px] text-slate-400 font-medium">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5">
+<span class="size-1.5 rounded-full bg-green-500"></span>
+<span>System Operational</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[12px]">device_hub</span>
+<span>Branch: main</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span>DevArena Cloud v2.4.1</span>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">keyboard</span>
+<span>Command Menu ⌘K</span>
+</div>
+</div>
+</footer>
+</body></html>

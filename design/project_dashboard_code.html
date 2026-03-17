@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DevArena - Project Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#3713ec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#131022",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .chart-bar-estimated {
+            background-color: rgba(55, 19, 236, 0.3);
+        }
+        .chart-bar-actual {
+            background-color: #3713ec;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-primary/20 px-6 py-3 bg-white dark:bg-background-dark/50 backdrop-blur-md sticky top-0 z-50">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3 text-primary">
+<span class="material-symbols-outlined text-3xl font-bold">rocket</span>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">DevArena</h2>
+</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" href="#">Dashboard</a>
+<a class="text-primary text-sm font-semibold border-b-2 border-primary pb-4 -mb-4 transition-colors" href="#">Projects</a>
+<a class="text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" href="#">Team</a>
+<a class="text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" href="#">Reports</a>
+</nav>
+</div>
+<div class="flex flex-1 justify-end gap-4 items-center">
+<label class="hidden sm:flex flex-col min-w-40 h-10 max-w-64">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full overflow-hidden border border-slate-200 dark:border-primary/20 bg-slate-100 dark:bg-primary/10">
+<div class="text-slate-500 dark:text-slate-400 flex items-center justify-center pl-3">
+<span class="material-symbols-outlined text-xl">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 border-none bg-transparent focus:ring-0 text-sm placeholder:text-slate-500" placeholder="Search tasks..." value=""/>
+</div>
+</label>
+<div class="flex gap-2">
+<button class="flex items-center justify-center rounded-lg h-10 w-10 bg-slate-100 dark:bg-primary/20 text-slate-700 dark:text-slate-200 hover:bg-primary/10 transition-all">
+<span class="material-symbols-outlined text-xl">notifications</span>
+</button>
+<button class="flex items-center justify-center rounded-lg h-10 w-10 bg-slate-100 dark:bg-primary/20 text-slate-700 dark:text-slate-200 hover:bg-primary/10 transition-all">
+<span class="material-symbols-outlined text-xl">settings</span>
+</button>
+</div>
+<div class="bg-primary/20 border-2 border-primary rounded-full size-10 flex items-center justify-center overflow-hidden" data-alt="User profile avatar">
+<span class="material-symbols-outlined text-primary">person</span>
+</div>
+</div>
+</header>
+<main class="flex-1 px-4 py-8 md:px-10 lg:px-20 max-w-[1400px] mx-auto w-full">
+<!-- Project Header -->
+<div class="flex flex-wrap justify-between items-end gap-6 mb-8">
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary bg-primary/10 p-2 rounded-lg">inventory_2</span>
+<nav class="flex text-sm text-slate-500">
+<span>Projects</span>
+<span class="mx-2">/</span>
+<span class="text-primary font-medium">Slotting Optimization</span>
+</nav>
+</div>
+<h1 class="text-slate-900 dark:text-white text-4xl font-black leading-tight tracking-tight">Slotting Optimization IA</h1>
+<div class="flex items-center gap-3 mt-1">
+<span class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-500/10 text-green-500 text-xs font-bold uppercase tracking-wider">
+<span class="size-2 rounded-full bg-green-500 animate-pulse"></span>
+                                Active Development
+                            </span>
+<span class="text-slate-400 text-sm">Last update: 2 hours ago</span>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center justify-center rounded-lg h-11 px-5 border border-slate-200 dark:border-primary/30 bg-white dark:bg-primary/10 text-slate-700 dark:text-slate-200 text-sm font-bold hover:bg-slate-50 dark:hover:bg-primary/20 transition-all">
+<span class="material-symbols-outlined mr-2">share</span>
+                            Share
+                        </button>
+<button class="flex items-center justify-center rounded-lg h-11 px-6 bg-primary text-white text-sm font-bold hover:brightness-110 shadow-lg shadow-primary/20 transition-all">
+<span class="material-symbols-outlined mr-2">edit</span>
+                            Edit Project
+                        </button>
+</div>
+</div>
+<!-- Main Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Left Column: Progress & Metrics -->
+<div class="lg:col-span-2 space-y-6">
+<!-- Progress Card -->
+<div class="bg-white dark:bg-background-dark/40 border border-slate-200 dark:border-primary/10 rounded-xl p-6 shadow-sm">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-lg font-bold">Overall Progress</h3>
+<span class="text-3xl font-black text-primary">68%</span>
+</div>
+<div class="space-y-4">
+<div class="w-full bg-slate-100 dark:bg-primary/5 rounded-full h-4 overflow-hidden border border-slate-200 dark:border-primary/10 p-0.5">
+<div class="bg-primary h-full rounded-full transition-all duration-1000" style="width: 68%;"></div>
+</div>
+<div class="flex justify-between text-sm text-slate-500 dark:text-slate-400">
+<p>On track for <span class="text-slate-900 dark:text-slate-200 font-semibold">Q4 release</span></p>
+<p>12 of 18 Milestones reached</p>
+</div>
+</div>
+</div>
+<!-- Charts and Primary Metrics -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Lead Time Card -->
+<div class="bg-white dark:bg-background-dark/40 border border-slate-200 dark:border-primary/10 rounded-xl p-6 shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<p class="text-slate-500 dark:text-slate-400 font-medium">Average Lead Time</p>
+<span class="material-symbols-outlined text-primary/40">timer</span>
+</div>
+<div class="flex items-baseline gap-3">
+<p class="text-4xl font-black text-slate-900 dark:text-white leading-none">4.2 Days</p>
+<p class="text-green-500 text-sm font-bold flex items-center">
+<span class="material-symbols-outlined text-sm">arrow_downward</span>
+                                        12%
+                                    </p>
+</div>
+<p class="text-slate-500 text-xs mt-4">Average time from commit to production</p>
+</div>
+<!-- Estimation Accuracy Card (Mini Chart) -->
+<div class="bg-white dark:bg-background-dark/40 border border-slate-200 dark:border-primary/10 rounded-xl p-6 shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<p class="text-slate-500 dark:text-slate-400 font-medium">Estimation Accuracy</p>
+<span class="material-symbols-outlined text-primary/40">bar_chart</span>
+</div>
+<div class="flex items-end h-20 gap-3">
+<div class="flex-1 flex flex-col justify-end gap-1">
+<div class="chart-bar-estimated w-full rounded-t-sm" style="height: 80%"></div>
+<div class="chart-bar-actual w-full rounded-t-sm" style="height: 65%"></div>
+</div>
+<div class="flex-1 flex flex-col justify-end gap-1">
+<div class="chart-bar-estimated w-full rounded-t-sm" style="height: 70%"></div>
+<div class="chart-bar-actual w-full rounded-t-sm" style="height: 72%"></div>
+</div>
+<div class="flex-1 flex flex-col justify-end gap-1">
+<div class="chart-bar-estimated w-full rounded-t-sm" style="height: 90%"></div>
+<div class="chart-bar-actual w-full rounded-t-sm" style="height: 85%"></div>
+</div>
+<div class="flex-1 flex flex-col justify-end gap-1">
+<div class="chart-bar-estimated w-full rounded-t-sm" style="height: 60%"></div>
+<div class="chart-bar-actual w-full rounded-t-sm" style="height: 55%"></div>
+</div>
+</div>
+<div class="flex gap-4 mt-3 text-[10px] font-bold uppercase tracking-widest">
+<div class="flex items-center gap-1.5"><span class="size-2 bg-primary/30 rounded-full"></span> Est.</div>
+<div class="flex items-center gap-1.5"><span class="size-2 bg-primary rounded-full"></span> Act.</div>
+</div>
+</div>
+</div>
+<!-- Critical Bugs List -->
+<div class="bg-white dark:bg-background-dark/40 border border-slate-200 dark:border-primary/10 rounded-xl overflow-hidden shadow-sm">
+<div class="p-6 border-b border-slate-200 dark:border-primary/10 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-red-500">bug_report</span>
+<h3 class="font-bold">Critical Bugs</h3>
+<span class="bg-red-500/10 text-red-500 px-2 py-0.5 rounded text-xs font-bold">3 Open</span>
+</div>
+<a class="text-primary text-xs font-bold hover:underline" href="#">View All</a>
+</div>
+<div class="divide-y divide-slate-100 dark:divide-primary/5">
+<div class="p-4 flex items-start gap-4 hover:bg-slate-50 dark:hover:bg-primary/5 transition-colors">
+<span class="material-symbols-outlined text-red-500 mt-0.5">priority_high</span>
+<div class="flex-1">
+<h4 class="text-sm font-semibold text-slate-900 dark:text-slate-100">API Latency Spike on Slotting Calculation</h4>
+<p class="text-xs text-slate-500 mt-1">Found in Production • Reported by Monitor System</p>
+</div>
+<span class="text-xs bg-slate-100 dark:bg-primary/10 text-slate-600 dark:text-slate-400 px-2 py-1 rounded">2h ago</span>
+</div>
+<div class="p-4 flex items-start gap-4 hover:bg-slate-50 dark:hover:bg-primary/5 transition-colors">
+<span class="material-symbols-outlined text-orange-500 mt-0.5">priority_high</span>
+<div class="flex-1">
+<h4 class="text-sm font-semibold text-slate-900 dark:text-slate-100">Null Pointer in Legacy Warehouse Adapter</h4>
+<p class="text-xs text-slate-500 mt-1">Found in Staging • Reported by Sarah J.</p>
+</div>
+<span class="text-xs bg-slate-100 dark:bg-primary/10 text-slate-600 dark:text-slate-400 px-2 py-1 rounded">5h ago</span>
+</div>
+<div class="p-4 flex items-start gap-4 hover:bg-slate-50 dark:hover:bg-primary/5 transition-colors">
+<span class="material-symbols-outlined text-red-500 mt-0.5">priority_high</span>
+<div class="flex-1">
+<h4 class="text-sm font-semibold text-slate-900 dark:text-slate-100">Memory Leak in Background Sync Task</h4>
+<p class="text-xs text-slate-500 mt-1">Found in Development • Reported by Automated Tests</p>
+</div>
+<span class="text-xs bg-slate-100 dark:bg-primary/10 text-slate-600 dark:text-slate-400 px-2 py-1 rounded">1d ago</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Team & Details -->
+<div class="space-y-6">
+<!-- Team Summary -->
+<div class="bg-white dark:bg-background-dark/40 border border-slate-200 dark:border-primary/10 rounded-xl p-6 shadow-sm">
+<h3 class="font-bold mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">groups</span>
+                                Project Team
+                            </h3>
+<div class="space-y-4">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-primary/20 flex items-center justify-center border-2 border-primary" data-alt="Project Lead Profile">
+<span class="material-symbols-outlined text-primary text-xl">face</span>
+</div>
+<div>
+<p class="text-sm font-bold">Alex Rivera</p>
+<p class="text-xs text-slate-500">Project Lead</p>
+</div>
+<span class="ml-auto flex items-center text-green-500"><span class="material-symbols-outlined text-sm">circle</span></span>
+</div>
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-primary/10 flex items-center justify-center" data-alt="Team member 2 profile">
+<span class="material-symbols-outlined text-slate-400 text-xl">person</span>
+</div>
+<div>
+<p class="text-sm font-bold">Elena Chen</p>
+<p class="text-xs text-slate-500">Backend Dev</p>
+</div>
+<span class="ml-auto flex items-center text-slate-400"><span class="material-symbols-outlined text-sm">circle</span></span>
+</div>
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-primary/10 flex items-center justify-center" data-alt="Team member 3 profile">
+<span class="material-symbols-outlined text-slate-400 text-xl">person</span>
+</div>
+<div>
+<p class="text-sm font-bold">Marcus Thorne</p>
+<p class="text-xs text-slate-500">Data Engineer</p>
+</div>
+<span class="ml-auto flex items-center text-green-500"><span class="material-symbols-outlined text-sm">circle</span></span>
+</div>
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-primary/10 flex items-center justify-center" data-alt="Team member 4 profile">
+<span class="material-symbols-outlined text-slate-400 text-xl">person</span>
+</div>
+<div>
+<p class="text-sm font-bold">Sarah Jenkins</p>
+<p class="text-xs text-slate-500">QA Lead</p>
+</div>
+<span class="ml-auto flex items-center text-green-500"><span class="material-symbols-outlined text-sm">circle</span></span>
+</div>
+</div>
+<button class="w-full mt-6 py-2 border border-slate-200 dark:border-primary/20 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-primary/5 transition-all">
+                                Manage Team Members
+                            </button>
+</div>
+<!-- Project Metadata -->
+<div class="bg-white dark:bg-background-dark/40 border border-slate-200 dark:border-primary/10 rounded-xl p-6 shadow-sm">
+<h3 class="font-bold mb-4">Project Details</h3>
+<ul class="space-y-3 text-sm">
+<li class="flex justify-between">
+<span class="text-slate-500">Repository</span>
+<span class="font-mono text-xs text-primary bg-primary/5 px-2 py-0.5 rounded">gh:devarena/ia-slotting</span>
+</li>
+<li class="flex justify-between">
+<span class="text-slate-500">Environment</span>
+<span class="text-slate-900 dark:text-slate-200 font-medium">AWS (us-east-1)</span>
+</li>
+<li class="flex justify-between">
+<span class="text-slate-500">Division</span>
+<span class="text-slate-900 dark:text-slate-200 font-medium">Intelligent Automation</span>
+</li>
+<li class="flex justify-between">
+<span class="text-slate-500">Stakeholder</span>
+<span class="text-slate-900 dark:text-slate-200 font-medium">Ops Department</span>
+</li>
+</ul>
+</div>
+<!-- Activity Feed -->
+<div class="bg-primary/5 border border-primary/20 rounded-xl p-6">
+<h3 class="font-bold mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">history</span>
+                                Recent Activity
+                            </h3>
+<div class="space-y-4 relative before:content-[''] before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-primary/10">
+<div class="relative pl-8">
+<div class="absolute left-0 top-1 size-6 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30">
+<span class="material-symbols-outlined text-[12px] text-primary">commit</span>
+</div>
+<p class="text-xs font-bold">New deployment to Staging</p>
+<p class="text-[10px] text-slate-500">14 minutes ago</p>
+</div>
+<div class="relative pl-8">
+<div class="absolute left-0 top-1 size-6 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30">
+<span class="material-symbols-outlined text-[12px] text-primary">task_alt</span>
+</div>
+<p class="text-xs font-bold">Sprint #14 Retrospective closed</p>
+<p class="text-[10px] text-slate-500">3 hours ago</p>
+</div>
+<div class="relative pl-8">
+<div class="absolute left-0 top-1 size-6 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30">
+<span class="material-symbols-outlined text-[12px] text-primary">person_add</span>
+</div>
+<p class="text-xs font-bold">Sarah J. joined the team</p>
+<p class="text-[10px] text-slate-500">Yesterday</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Footer Area -->
+<footer class="mt-auto border-t border-slate-200 dark:border-primary/10 py-6 px-4 md:px-20 flex flex-wrap justify-between items-center gap-4 text-xs text-slate-500">
+<p>© 2023 DevArena Platforms Inc. All systems operational.</p>
+<div class="flex gap-6">
+<a class="hover:text-primary transition-colors" href="#">Documentation</a>
+<a class="hover:text-primary transition-colors" href="#">Security</a>
+<a class="hover:text-primary transition-colors" href="#">Support</a>
+</div>
+</footer>
+</div>
+</div>
+</body></html>

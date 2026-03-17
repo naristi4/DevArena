@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background-dark text-slate-100 antialiased;
+  }
+}
+
+/* Stitch custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(55, 19, 236, 0.2); border-radius: 10px; }
+
+/* Estimation accuracy chart bars */
+.chart-bar-estimated { background-color: rgba(55, 19, 236, 0.3); }
+.chart-bar-actual    { background-color: #3713ec; }
