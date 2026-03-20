@@ -5,10 +5,10 @@ import { prisma } from "@/lib/prisma";
 // ─── PUT /api/users/[id] ───────────────────────────────────────────────────────
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
     const { name, role, position, avatarUrl, squadId } = body;
 
@@ -37,10 +37,11 @@ export async function PUT(
 // ─── DELETE /api/users/[id] ────────────────────────────────────────────────────
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await prisma.user.delete({ where: { id: params.id } });
+    const { id } = await params;
+    await prisma.user.delete({ where: { id } });
     revalidatePath("/settings/users");
     return NextResponse.json({ ok: true });
   } catch (err) {

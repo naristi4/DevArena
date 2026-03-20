@@ -6,16 +6,17 @@ import { prisma } from "@/lib/prisma";
 // Verifies currentPassword and updates to newPassword.
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { currentPassword, newPassword } = await req.json();
 
     if (!currentPassword || !newPassword) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({ where: { id: params.id } });
+    const user = await prisma.user.findUnique({ where: { id } });
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -27,7 +28,7 @@ export async function PUT(
 
     const hashed = await bcrypt.hash(newPassword, 10);
     await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data:  { password: hashed },
     });
 
