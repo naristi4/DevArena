@@ -5,8 +5,13 @@ import DashboardClient from "@/components/DashboardClient";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const dbSquads = await prisma.squad.findMany({ select: { name: true }, orderBy: { name: "asc" } });
-  const squads = dbSquads.map((s) => s.name);
+  let squads: string[] = [];
+  try {
+    const dbSquads = await prisma.squad.findMany({ select: { name: true }, orderBy: { name: "asc" } });
+    squads = dbSquads.map((s) => s.name);
+  } catch {
+    // DB unavailable — dashboard renders without squad filter
+  }
 
   return (
     <Suspense>
