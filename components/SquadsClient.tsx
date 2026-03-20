@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import type { Squad } from "@/lib/squads";
 import type { Role } from "@/lib/users";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -8,11 +9,12 @@ import { useLanguage } from "@/contexts/LanguageContext";
 // ─── Local Types ──────────────────────────────────────────────────────────────
 
 type UserPublic = {
-  id:    string;
-  name:  string;
-  email: string;
-  role:  Role;
-  squad: string;
+  id:      string;
+  name:    string;
+  email:   string;
+  role:    Role;
+  squad:   string;
+  squadId: string | null;
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -45,76 +47,162 @@ interface Props {
 
 export default function SquadsClient({ initialSquads, initialUsers }: Props) {
   const { t } = useLanguage();
+  const router = useRouter();
+
   const [squads,     setSquads]     = useState<Squad[]>(initialSquads);
   const [users,      setUsers]      = useState<UserPublic[]>(initialUsers);
   const [showForm,   setShowForm]   = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId,  setEditingId]  = useState<string | null>(null);
+  const [error,      setError]      = useState("");
+
+  useEffect(() => { setSquads(initialSquads); }, [initialSquads]);
+  useEffect(() => { setUsers(initialUsers); },  [initialUsers]);
 
   // ── Create form state ──────────────────────────────────────────────────────
-  const [formName,  setFormName]  = useState("");
-  const [formDesc,  setFormDesc]  = useState("");
-  const [formLead,  setFormLead]  = useState("");
+  const [formName,   setFormName]   = useState("");
+  const [formDesc,   setFormDesc]   = useState("");
+  const [formLeadId, setFormLeadId] = useState("");
 
   // ── Edit form state ────────────────────────────────────────────────────────
-  const [editName, setEditName] = useState("");
-  const [editDesc, setEditDesc] = useState("");
-  const [editLead, setEditLead] = useState("");
+  const [editName,   setEditName]   = useState("");
+  const [editDesc,   setEditDesc]   = useState("");
+  const [editLeadId, setEditLeadId] = useState("");
 
   // ── Create ─────────────────────────────────────────────────────────────────
-  function handleCreate(e: React.FormEvent) {
+  async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (!formName.trim()) return;
-    const newSquad: Squad = {
-      squad_id:    String(Date.now()),
-      name:        formName.trim(),
-      description: formDesc.trim(),
-      squad_lead:  formLead || undefined,
-    };
-    setSquads([newSquad, ...squads]);
-    setFormName(""); setFormDesc(""); setFormLead("");
-    setShowForm(false);
+    setError("");
+    try {
+      const res = await fetch("/api/squads", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({
+          name:        formName.trim(),
+          description: formDesc.trim(),
+          leadId:      formLeadId || null,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error ?? "Failed to create squad");
+        return;
+      }
+      const created: Squad = await res.json();
+      setSquads([created, ...squads]);
+      setFormName(""); setFormDesc(""); setFormLeadId("");
+      setShowForm(false);
+      router.refresh();
+    } catch {
+      setError("Network error — please try again");
+    }
   }
 
   // ── Edit ───────────────────────────────────────────────────────────────────
   function startEdit(sq: Squad) {
-    setEditingId(sq.squad_id);
+    setEditingId(sq.id);
     setEditName(sq.name);
     setEditDesc(sq.description);
-    setEditLead(sq.squad_lead ?? "");
+    setEditLeadId(sq.leadId ?? "");
   }
 
-  function saveEdit(squad_id: string) {
-    setSquads(squads.map((sq) =>
-      sq.squad_id === squad_id
-        ? { ...sq, name: editName.trim(), description: editDesc.trim(), squad_lead: editLead || undefined }
-        : sq
-    ));
-    setEditingId(null);
+  async function saveEdit(id: string) {
+    setError("");
+    try {
+      const res = await fetch(`/api/squads/${id}`, {
+        method:  "PUT",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({
+          name:        editName.trim(),
+          description: editDesc.trim(),
+          leadId:      editLeadId || null,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error ?? "Failed to update squad");
+        return;
+      }
+      const updated: Squad = await res.json();
+      setSquads(squads.map((sq) => sq.id === id ? updated : sq));
+      setEditingId(null);
+      router.refresh();
+    } catch {
+      setError("Network error — please try again");
+    }
   }
 
   function cancelEdit() { setEditingId(null); }
 
   // ── Members ────────────────────────────────────────────────────────────────
-  function assignUser(userId: string, squadName: string) {
-    setUsers(users.map((u) => u.id === userId ? { ...u, squad: squadName } : u));
+  async function assignUser(userId: string, squadId: string, squadName: string) {
+    setError("");
+    try {
+      const res = await fetch(`/api/users/${userId}`, {
+        method:  "PUT",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ squadId }),
+      });
+      if (!res.ok) {
+        setError("Failed to assign member");
+        return;
+      }
+      setUsers(users.map((u) => u.id === userId ? { ...u, squad: squadName, squadId } : u));
+      router.refresh();
+    } catch {
+      setError("Network error — please try again");
+    }
   }
 
-  function removeUser(userId: string) {
-    setUsers(users.map((u) => u.id === userId ? { ...u, squad: "" } : u));
+  async function removeUser(userId: string) {
+    setError("");
+    try {
+      const res = await fetch(`/api/users/${userId}`, {
+        method:  "PUT",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ squadId: null }),
+      });
+      if (!res.ok) {
+        setError("Failed to remove member");
+        return;
+      }
+      setUsers(users.map((u) => u.id === userId ? { ...u, squad: "", squadId: null } : u));
+      router.refresh();
+    } catch {
+      setError("Network error — please try again");
+    }
   }
 
   // ── Delete ─────────────────────────────────────────────────────────────────
-  function handleDelete(squad_id: string) {
-    setSquads(squads.filter((sq) => sq.squad_id !== squad_id));
-    setUsers(users.map((u) => {
-      const sq = squads.find((s) => s.squad_id === squad_id);
-      return sq && u.squad === sq.name ? { ...u, squad: "" } : u;
-    }));
+  async function handleDelete(id: string) {
+    setError("");
+    try {
+      const res = await fetch(`/api/squads/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        setError("Failed to delete squad");
+        return;
+      }
+      const sq = squads.find((s) => s.id === id);
+      setSquads(squads.filter((s) => s.id !== id));
+      if (sq) {
+        setUsers(users.map((u) => u.squad === sq.name ? { ...u, squad: "", squadId: null } : u));
+      }
+      router.refresh();
+    } catch {
+      setError("Network error — please try again");
+    }
   }
 
   return (
     <div className="space-y-6">
+
+      {/* ── Error banner ─────────────────────────────────────────────────────── */}
+      {error && (
+        <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3.5 py-2.5">
+          {error}
+        </p>
+      )}
 
       {/* ── Toolbar ─────────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
@@ -167,13 +255,13 @@ export default function SquadsClient({ initialSquads, initialUsers }: Props) {
                 Squad Lead
               </label>
               <select
-                value={formLead}
-                onChange={(e) => setFormLead(e.target.value)}
+                value={formLeadId}
+                onChange={(e) => setFormLeadId(e.target.value)}
                 className="w-full px-3 py-2 text-sm bg-primary/5 border border-primary/20 text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
               >
                 <option value="">— No lead —</option>
                 {users.map((u) => (
-                  <option key={u.id} value={u.name}>{u.name}</option>
+                  <option key={u.id} value={u.id}>{u.name}</option>
                 ))}
               </select>
             </div>
@@ -181,7 +269,7 @@ export default function SquadsClient({ initialSquads, initialUsers }: Props) {
           <div className="flex items-center justify-end gap-3 pt-2 border-t border-primary/20">
             <button
               type="button"
-              onClick={() => { setShowForm(false); setFormName(""); setFormDesc(""); setFormLead(""); }}
+              onClick={() => { setShowForm(false); setFormName(""); setFormDesc(""); setFormLeadId(""); }}
               className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 border border-primary/20 rounded-lg hover:bg-primary/5 transition-colors"
             >
               {t.common.cancel}
@@ -229,19 +317,19 @@ export default function SquadsClient({ initialSquads, initialUsers }: Props) {
               squads.map((sq) => {
                 const members    = users.filter((u) => u.squad === sq.name);
                 const unassigned = users.filter((u) => u.squad !== sq.name);
-                const isEditing  = editingId === sq.squad_id;
-                const isExpanded = expandedId === sq.squad_id;
+                const isEditing  = editingId === sq.id;
+                const isExpanded = expandedId === sq.id;
 
                 return [
                   // ── Data row ──────────────────────────────────────────────
                   <tr
-                    key={`row-${sq.squad_id}`}
+                    key={`row-${sq.id}`}
                     className="hover:bg-primary/5 transition-colors group"
                   >
                     {/* Expand toggle (far left) */}
                     <td className="px-3 py-4 text-center">
                       <button
-                        onClick={() => setExpandedId(isExpanded ? null : sq.squad_id)}
+                        onClick={() => setExpandedId(isExpanded ? null : sq.id)}
                         title={isExpanded ? "Collapse members" : "Manage members"}
                         className="p-1 rounded-md text-slate-500 hover:text-primary hover:bg-primary/10 transition-colors"
                       >
@@ -286,13 +374,13 @@ export default function SquadsClient({ initialSquads, initialUsers }: Props) {
                     <td className="px-5 py-4">
                       {isEditing ? (
                         <select
-                          value={editLead}
-                          onChange={(e) => setEditLead(e.target.value)}
+                          value={editLeadId}
+                          onChange={(e) => setEditLeadId(e.target.value)}
                           className="w-full px-2.5 py-1.5 text-sm bg-primary/10 border border-primary/30 text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                         >
                           <option value="">— No lead —</option>
                           {users.map((u) => (
-                            <option key={u.id} value={u.name}>{u.name}</option>
+                            <option key={u.id} value={u.id}>{u.name}</option>
                           ))}
                         </select>
                       ) : sq.squad_lead ? (
@@ -336,7 +424,7 @@ export default function SquadsClient({ initialSquads, initialUsers }: Props) {
                         {isEditing ? (
                           <>
                             <button
-                              onClick={() => saveEdit(sq.squad_id)}
+                              onClick={() => saveEdit(sq.id)}
                               className="px-3 py-1.5 text-xs font-semibold text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
                             >
                               {t.settings.squads.saveSquad}
@@ -358,7 +446,7 @@ export default function SquadsClient({ initialSquads, initialUsers }: Props) {
                               <span className="material-symbols-outlined text-[16px]">edit</span>
                             </button>
                             <button
-                              onClick={() => handleDelete(sq.squad_id)}
+                              onClick={() => handleDelete(sq.id)}
                               title="Delete squad"
                               className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                             >
@@ -372,7 +460,7 @@ export default function SquadsClient({ initialSquads, initialUsers }: Props) {
 
                   // ── Expandable members panel ──────────────────────────────
                   isExpanded && (
-                    <tr key={`expand-${sq.squad_id}`}>
+                    <tr key={`expand-${sq.id}`}>
                       <td colSpan={6} className="px-5 py-4 bg-primary/[0.03] border-t border-primary/10">
                         <div className="space-y-3">
                           <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
@@ -420,7 +508,7 @@ export default function SquadsClient({ initialSquads, initialUsers }: Props) {
                                 defaultValue=""
                                 onChange={(e) => {
                                   if (e.target.value) {
-                                    assignUser(e.target.value, sq.name);
+                                    assignUser(e.target.value, sq.id, sq.name);
                                     e.target.value = "";
                                   }
                                 }}

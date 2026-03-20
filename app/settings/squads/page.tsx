@@ -1,18 +1,40 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
-import { MOCK_SQUADS } from "@/lib/squads";
 import { prisma } from "@/lib/prisma";
 import SquadsClient from "@/components/SquadsClient";
+
+export const dynamic = "force-dynamic";
 
 export default async function SettingsSquadsPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
   if (session.user.role !== "Admin") redirect("/");
 
-  // Strip passwords before passing to client
-  const dbUsersRaw = await prisma.user.findMany({ include: { squad: true }, orderBy: { name: "asc" } });
-  const users = dbUsersRaw.map(({ password: _, squad, ...u }) => ({ ...u, squad: squad?.name ?? "" }));
+  const [dbSquads, dbUsersRaw] = await Promise.all([
+    prisma.squad.findMany({
+      include: { lead: { select: { id: true, name: true } } },
+      orderBy: { name: "asc" },
+    }),
+    prisma.user.findMany({ include: { squad: true }, orderBy: { name: "asc" } }),
+  ]);
+
+  const squads = dbSquads.map((s) => ({
+    id:          s.id,
+    name:        s.name,
+    description: s.description ?? "",
+    squad_lead:  s.lead?.name  ?? undefined,
+    leadId:      s.leadId      ?? null,
+  }));
+
+  const users = dbUsersRaw.map(({ password: _, squad, ...u }) => ({
+    id:      u.id,
+    name:    u.name,
+    email:   u.email,
+    role:    u.role,
+    squad:   squad?.name ?? "",
+    squadId: u.squadId   ?? null,
+  }));
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -22,7 +44,7 @@ export default async function SettingsSquadsPage() {
           Manage engineering squads, leads, and member assignments.
         </p>
       </div>
-      <SquadsClient initialSquads={MOCK_SQUADS} initialUsers={users} />
+      <SquadsClient initialSquads={squads} initialUsers={users} />
     </div>
   );
 }

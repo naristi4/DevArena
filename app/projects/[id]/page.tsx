@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getMockPipelineItems } from "@/lib/pipeline";
 import { MOCK_TASKS } from "@/lib/tasks";
-import { MOCK_SQUADS } from "@/lib/squads";
 import { prisma } from "@/lib/prisma";
 import { getSquadLeaderboard } from "@/lib/gamification";
 import ProjectDetailContent from "@/components/ProjectDetailContent";
@@ -27,8 +26,12 @@ export default async function ProjectDetailPage({
   if (!item) notFound();
 
   const tasks    = MOCK_TASKS.filter((t) => t.project_id === id);
-  const userNames = (await prisma.user.findMany({ select: { name: true }, orderBy: { name: "asc" } })).map((u) => u.name);
-  const squads   = MOCK_SQUADS.map((s) => s.name);
+  const [userNamesRaw, squadsRaw] = await Promise.all([
+    prisma.user.findMany({ select: { name: true }, orderBy: { name: "asc" } }),
+    prisma.squad.findMany({ select: { name: true }, orderBy: { name: "asc" } }),
+  ]);
+  const userNames = userNamesRaw.map((u) => u.name);
+  const squads    = squadsRaw.map((s) => s.name);
 
   // ── Edit permission ───────────────────────────────────────────────────────
   const userSquad = (session.user as any).squad as string | undefined;

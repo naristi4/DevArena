@@ -2,7 +2,6 @@ import { redirect }      from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions }     from "@/lib/auth";
 import { getMockPipelineItems }       from "@/lib/pipeline";
-import { MOCK_SQUADS }                from "@/lib/squads";
 import { MOCK_TASKS, ACTIVE_STATUSES } from "@/lib/tasks";
 import { prisma }                     from "@/lib/prisma";
 import PipelineShell                  from "@/components/PipelineShell";
@@ -15,8 +14,12 @@ export default async function PipelinePage() {
   const isAdminUser = session.user.role === "Admin";
   const userSquad   = session.user.squad ?? "";
 
-  const squads      = MOCK_SQUADS.map((s) => s.name);
-  const users       = (await prisma.user.findMany({ select: { name: true }, orderBy: { name: "asc" } })).map((u) => u.name);
+  const [squadsRaw, usersRaw] = await Promise.all([
+    prisma.squad.findMany({ select: { name: true }, orderBy: { name: "asc" } }),
+    prisma.user.findMany({ select: { name: true }, orderBy: { name: "asc" } }),
+  ]);
+  const squads = squadsRaw.map((s) => s.name);
+  const users  = usersRaw.map((u) => u.name);
   const currentUser = session.user?.name ?? "Unknown";
 
   // ── Scope pipeline items to the user's squad for Squad Members ──────────────

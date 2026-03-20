@@ -6,7 +6,6 @@ import Link from "next/link";
 import { MOCK_PIPELINE_ITEMS } from "@/lib/pipeline";
 import { MOCK_TASKS } from "@/lib/tasks";
 import { MOCK_BUGS } from "@/lib/bugs";
-import { MOCK_SQUADS } from "@/lib/squads";
 import {
   computeMetrics,
   type DateRange,
@@ -48,7 +47,7 @@ function exportCSV(rows: ProjectRow[]) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function DashboardClient() {
+export default function DashboardClient({ squads = [] }: { squads?: string[] }) {
   const { t, language } = useLanguage();
 
   const [dateRange,   setDateRange]   = useState<DateRange>("30d");
@@ -191,9 +190,9 @@ export default function DashboardClient() {
             className="pl-8 pr-4 py-2 text-xs border border-primary/20 bg-background-dark text-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
           >
             <option value="">{t.dashboard.allSquads}</option>
-            {MOCK_SQUADS.map((sq) => (
-              <option key={sq.squad_id} value={sq.name}>
-                {sq.name}
+            {squads.map((name) => (
+              <option key={name} value={name}>
+                {name}
               </option>
             ))}
           </select>
