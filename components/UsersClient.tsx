@@ -153,7 +153,7 @@ export default function UsersClient({ initialUsers, squads: squadsProp }: Props)
       let data: any;
       try { data = await res.json(); } catch { data = {}; }
       if (!res.ok) {
-        setApiError(data.error ?? `Error ${res.status} — try restarting the dev server`);
+        setApiError(data.error ?? `Server error ${res.status} — check Vercel function logs`);
         return;
       }
       setUsers([...users, { ...data, active: true }]); // optimistic update
@@ -212,7 +212,7 @@ export default function UsersClient({ initialUsers, squads: squadsProp }: Props)
       let data: any;
       try { data = await res.json(); } catch { data = {}; }
       if (!res.ok) {
-        setApiError(data.error ?? `Error ${res.status} — try restarting the dev server`);
+        setApiError(data.error ?? `Server error ${res.status} — check Vercel function logs`);
         return;
       }
       setUsers(users.map((u) =>

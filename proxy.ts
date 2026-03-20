@@ -7,6 +7,7 @@ export default async function proxy(request: NextRequest) {
   // Allow auth API and login page through
   if (
     pathname.startsWith("/api/auth") ||
+    pathname === "/api/health" ||
     pathname === "/login" ||
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico"
