@@ -19,11 +19,16 @@ export default async function SettingsUsersPage() {
     prisma.squad.findMany({ orderBy: { name: "asc" } }),
   ]);
 
-  // Strip password before sending to client
-  const users = dbUsers.map(({ password: _, ...u }) => ({
-    ...u,
-    squad:   u.squad?.name ?? "",
-    squadId: u.squadId ?? null,
+  // Strip password and normalize null → undefined for optional fields
+  const users = dbUsers.map(({ password: _, squad, ...u }) => ({
+    id:        u.id,
+    name:      u.name,
+    email:     u.email,
+    role:      u.role,
+    squad:     squad?.name ?? "",
+    squadId:   u.squadId   ?? null,
+    position:  u.position  ?? undefined,
+    avatarUrl: u.avatarUrl ?? undefined,
   }));
 
   const squads = dbSquads.map((s) => ({ id: s.id, name: s.name }));
