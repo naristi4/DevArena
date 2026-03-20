@@ -217,12 +217,6 @@ export default function LoginPage() {
           </a>
         </p>
 
-        {/* Demo credentials */}
-        <div className="mt-5 bg-primary/5 border border-primary/20 rounded-xl px-4 py-3.5 text-xs text-slate-400 space-y-1">
-          <p className="font-semibold text-slate-300">{t.auth.demoCredentials}</p>
-          <p>{t.auth.demoEmail} <span className="font-mono text-primary">alice@squadtracker.io</span></p>
-          <p>{t.auth.demoPassword} <span className="font-mono text-primary">demo1234</span></p>
-        </div>
       </div>
 
       {/* Powered by Melonn watermark */}
