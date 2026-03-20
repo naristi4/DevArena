@@ -4,15 +4,11 @@ import { useRef, useState }   from "react";
 import Link                   from "next/link";
 import Avatar                 from "@/components/Avatar";
 import { useLanguage }        from "@/contexts/LanguageContext";
-import {
-  updateUserAvatarUrl,
-  updateUserName,
-  updateUserPassword,
-} from "@/lib/users";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
+  userId:      string;
   email:       string;
   initialName: string;
   role:        string;
@@ -23,6 +19,7 @@ interface Props {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ProfileClient({
+  userId,
   email,
   initialName,
   role,
@@ -33,59 +30,92 @@ export default function ProfileClient({
   const fileRef = useRef<HTMLInputElement>(null);
 
   // ── Profile section state ─────────────────────────────────────────────────
-  const [name,        setName]        = useState(initialName);
-  const [localAvUrl,  setLocalAvUrl]  = useState(avatarUrl);
-  const [profileMsg,  setProfileMsg]  = useState<{ text: string; ok: boolean } | null>(null);
+  const [name,          setName]          = useState(initialName);
+  const [localAvUrl,    setLocalAvUrl]    = useState(avatarUrl);
+  const [profileMsg,    setProfileMsg]    = useState<{ text: string; ok: boolean } | null>(null);
+  const [profileSaving, setProfileSaving] = useState(false);
 
   // ── Password section state ────────────────────────────────────────────────
-  const [currentPw,   setCurrentPw]   = useState("");
-  const [newPw,       setNewPw]       = useState("");
-  const [confirmPw,   setConfirmPw]   = useState("");
-  const [pwMsg,       setPwMsg]       = useState<{ text: string; ok: boolean } | null>(null);
+  const [currentPw, setCurrentPw] = useState("");
+  const [newPw,     setNewPw]     = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [pwMsg,     setPwMsg]     = useState<{ text: string; ok: boolean } | null>(null);
+  const [pwSaving,  setPwSaving]  = useState(false);
 
   // ── Avatar upload ─────────────────────────────────────────────────────────
   function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const dataUrl = reader.result as string;
       setLocalAvUrl(dataUrl);
-      updateUserAvatarUrl(name, dataUrl);
+      // Persist to DB
+      await fetch(`/api/users/${userId}`, {
+        method:  "PUT",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ avatarUrl: dataUrl }),
+      });
     };
     reader.readAsDataURL(file);
-    // Reset input so same file can be re-selected
     e.target.value = "";
   }
 
   // ── Profile save ──────────────────────────────────────────────────────────
-  function handleProfileSave() {
+  async function handleProfileSave() {
     const trimmed = name.trim();
     if (!trimmed) return;
-    updateUserName(email, trimmed);
-    setProfileMsg({ text: t.profile.profileUpdated, ok: true });
-    setTimeout(() => setProfileMsg(null), 3000);
+    setProfileSaving(true);
+    try {
+      const res = await fetch(`/api/users/${userId}`, {
+        method:  "PUT",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ name: trimmed }),
+      });
+      setProfileMsg({ text: res.ok ? t.profile.profileUpdated : "Failed to save changes", ok: res.ok });
+    } catch {
+      setProfileMsg({ text: "Failed to save changes", ok: false });
+    } finally {
+      setProfileSaving(false);
+      setTimeout(() => setProfileMsg(null), 3000);
+    }
   }
 
   // ── Password update ───────────────────────────────────────────────────────
-  function handlePasswordUpdate() {
+  async function handlePasswordUpdate() {
     if (newPw !== confirmPw) {
       setPwMsg({ text: t.profile.passwordMismatch, ok: false });
       return;
     }
-    const ok = updateUserPassword(email, currentPw, newPw);
-    if (!ok) {
-      setPwMsg({ text: t.profile.incorrectPassword, ok: false });
-      return;
+    setPwSaving(true);
+    try {
+      const res = await fetch(`/api/users/${userId}/password`, {
+        method:  "PUT",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ currentPassword: currentPw, newPassword: newPw }),
+      });
+      if (res.ok) {
+        setCurrentPw("");
+        setNewPw("");
+        setConfirmPw("");
+        setPwMsg({ text: t.profile.passwordUpdated, ok: true });
+      } else {
+        const data = await res.json();
+        const wrong = data?.error === "Incorrect current password";
+        setPwMsg({ text: wrong ? t.profile.incorrectPassword : (data?.error ?? "Failed to update password"), ok: false });
+      }
+    } catch {
+      setPwMsg({ text: "Failed to update password", ok: false });
+    } finally {
+      setPwSaving(false);
+      setTimeout(() => setPwMsg(null), 3000);
     }
-    setCurrentPw("");
-    setNewPw("");
-    setConfirmPw("");
-    setPwMsg({ text: t.profile.passwordUpdated, ok: true });
-    setTimeout(() => setPwMsg(null), 3000);
   }
 
   const pwAllFilled = currentPw.length > 0 && newPw.length > 0 && confirmPw.length > 0;
+
+  // ── Role display label ────────────────────────────────────────────────────
+  const roleLabel = role === "SquadMember" ? "Squad Member" : role;
 
   // ── Input style helper ────────────────────────────────────────────────────
   const inputCls =
@@ -178,7 +208,7 @@ export default function ProfileClient({
                   <span className="material-symbols-outlined text-[12px] text-slate-600">lock</span>
                 </label>
                 <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-primary/20 text-primary border border-primary/30">
-                  {role}
+                  {roleLabel}
                 </span>
               </div>
               <div>
@@ -187,7 +217,7 @@ export default function ProfileClient({
                   <span className="material-symbols-outlined text-[12px] text-slate-600">lock</span>
                 </label>
                 <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-700/60 text-slate-300 border border-slate-600/40">
-                  {squad}
+                  {squad || "—"}
                 </span>
               </div>
             </div>
@@ -196,10 +226,10 @@ export default function ProfileClient({
             <div className="flex items-center gap-3 pt-1">
               <button
                 onClick={handleProfileSave}
-                disabled={!name.trim()}
+                disabled={!name.trim() || profileSaving}
                 className="px-4 py-2 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/80 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                {t.profile.saveChanges}
+                {profileSaving ? "Saving…" : t.profile.saveChanges}
               </button>
               {profileMsg && (
                 <span
@@ -267,10 +297,10 @@ export default function ProfileClient({
           <div className="flex items-center gap-3 pt-1">
             <button
               onClick={handlePasswordUpdate}
-              disabled={!pwAllFilled}
+              disabled={!pwAllFilled || pwSaving}
               className="px-4 py-2 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/80 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              {t.profile.updatePassword}
+              {pwSaving ? "Updating…" : t.profile.updatePassword}
             </button>
             {pwMsg && (
               <span

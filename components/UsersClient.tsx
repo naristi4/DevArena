@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import type { Role, Position } from "@/lib/users";
-import { updateUserAvatarUrl } from "@/lib/users";
 import Avatar from "@/components/Avatar";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -13,19 +13,26 @@ type UserPublic = {
   name:        string;
   email:       string;
   role:        Role;
-  squad:       string;
+  squad:       string;   // display name
+  squadId?:    string | null;
   position?:   Position;
   active:      boolean;
-  avatar_url?: string;
+  avatarUrl?:  string;
 };
 
 type FilterTab = "all" | "active" | "inactive";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
+/** Internal enum values → display labels */
+const ROLE_DISPLAY: Record<Role, string> = {
+  Admin:       "Admin",
+  SquadMember: "Squad Member",
+};
+
 const ROLE_BADGE: Record<Role, string> = {
-  Admin:          "bg-primary/20 text-primary",
-  "Squad Member": "bg-slate-700 text-slate-300",
+  Admin:       "bg-primary/20 text-primary",
+  SquadMember: "bg-slate-700 text-slate-300",
 };
 
 const POSITION_BADGE: Record<Position, string> = {
@@ -35,8 +42,7 @@ const POSITION_BADGE: Record<Position, string> = {
 };
 
 const POSITIONS: Position[] = ["Developer", "Architect", "PM"];
-const ROLES:     Role[]     = ["Admin", "Squad Member"];
-const DEFAULT_SQUADS       = ["Platform Squad", "Growth Squad", "Core Squad"];
+const ROLES:     Role[]     = ["Admin", "SquadMember"];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -51,34 +57,51 @@ function validateImageFile(file: File): string | null {
   return null;
 }
 
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
   initialUsers: Omit<UserPublic, "active">[];
-  squads?:      string[];  // available squad names for the squad selector
+  squads?:      { id: string; name: string }[];
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function UsersClient({ initialUsers, squads: squadsProp }: Props) {
-  const SQUADS = squadsProp ?? DEFAULT_SQUADS;
+  const SQUADS = squadsProp ?? [];
   const { t } = useLanguage();
+  const router = useRouter();
+
   // Seed active:true for all initial users
   const [users, setUsers] = useState<UserPublic[]>(
     initialUsers.map((u) => ({ ...u, active: true }))
   );
 
+  // Sync whenever the server re-fetches fresh data (after router.refresh())
+  useEffect(() => {
+    setUsers(initialUsers.map((u) => ({ ...u, active: true })));
+  }, [initialUsers]);
+
   // Create form state
-  const [showForm,    setShowForm]    = useState(false);
-  const [showPass,    setShowPass]    = useState(false);
+  const [showForm,     setShowForm]     = useState(false);
+  const [showPass,     setShowPass]     = useState(false);
   const [formName,     setFormName]     = useState("");
   const [formEmail,    setFormEmail]    = useState("");
   const [formPassword, setFormPassword] = useState("");
   const [formPosition, setFormPosition] = useState<Position>("Developer");
-  const [formRole,     setFormRole]     = useState<Role>("Squad Member");
-  const [formSquad,    setFormSquad]    = useState("");
+  const [formRole,     setFormRole]     = useState<Role>("SquadMember");
+  const [formSquadId,  setFormSquadId]  = useState("");
   const [formAvatar,   setFormAvatar]   = useState("");
   const [formImgError, setFormImgError] = useState<string | null>(null);
+  const [formSaving,   setFormSaving]   = useState(false);
   const formFileRef = useRef<HTMLInputElement>(null);
 
   // Edit state
@@ -86,11 +109,15 @@ export default function UsersClient({ initialUsers, squads: squadsProp }: Props)
   const [editName,     setEditName]     = useState("");
   const [editEmail,    setEditEmail]    = useState("");
   const [editPosition, setEditPosition] = useState<Position>("Developer");
-  const [editRole,     setEditRole]     = useState<Role>("Squad Member");
-  const [editSquad,    setEditSquad]    = useState("");
+  const [editRole,     setEditRole]     = useState<Role>("SquadMember");
+  const [editSquadId,  setEditSquadId]  = useState("");
   const [editAvatar,   setEditAvatar]   = useState("");
   const [editImgError, setEditImgError] = useState<string | null>(null);
+  const [editSaving,   setEditSaving]   = useState(false);
   const editFileRef = useRef<HTMLInputElement>(null);
+
+  // Global error banner
+  const [apiError, setApiError] = useState<string | null>(null);
 
   // Filter state
   const [filterTab, setFilterTab] = useState<FilterTab>("all");
@@ -104,24 +131,39 @@ export default function UsersClient({ initialUsers, squads: squadsProp }: Props)
     users;
 
   // ── Create ───────────────────────────────────────────────────────────────
-  function handleCreate(e: React.FormEvent) {
+  async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    if (!formName.trim() || !formEmail.trim()) return;
-
-    const newUser: UserPublic = {
-      id:         String(Date.now()),
-      name:       formName.trim(),
-      email:      formEmail.trim(),
-      role:       formRole,
-      squad:      formSquad,
-      position:   formPosition,
-      active:     true,
-      avatar_url: formAvatar || undefined,
-    };
-
-    if (formAvatar) updateUserAvatarUrl(newUser.name, formAvatar);
-    setUsers([...users, newUser]);
-    cancelForm();
+    if (!formName.trim() || !formEmail.trim() || !formPassword.trim()) return;
+    setApiError(null);
+    setFormSaving(true);
+    try {
+      const res = await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name:      formName.trim(),
+          email:     formEmail.trim(),
+          password:  formPassword,
+          role:      formRole,
+          position:  formPosition,
+          squadId:   formSquadId || null,
+          avatarUrl: formAvatar || null,
+        }),
+      });
+      let data: any;
+      try { data = await res.json(); } catch { data = {}; }
+      if (!res.ok) {
+        setApiError(data.error ?? `Error ${res.status} — try restarting the dev server`);
+        return;
+      }
+      setUsers([...users, { ...data, active: true }]); // optimistic update
+      cancelForm();
+      router.refresh(); // re-fetch server component → syncs DB state into initialUsers prop
+    } catch (err: any) {
+      setApiError("Network error — " + (err?.message ?? "please try again"));
+    } finally {
+      setFormSaving(false);
+    }
   }
 
   function cancelForm() {
@@ -131,8 +173,8 @@ export default function UsersClient({ initialUsers, squads: squadsProp }: Props)
     setFormEmail("");
     setFormPassword("");
     setFormPosition("Developer");
-    setFormRole("Squad Member");
-    setFormSquad("");
+    setFormRole("SquadMember");
+    setFormSquadId("");
     setFormAvatar("");
     setFormImgError(null);
   }
@@ -144,23 +186,45 @@ export default function UsersClient({ initialUsers, squads: squadsProp }: Props)
     setEditEmail(user.email);
     setEditPosition(user.position ?? "Developer");
     setEditRole(user.role);
-    setEditSquad(user.squad);
-    setEditAvatar(user.avatar_url ?? "");
+    setEditSquadId(user.squadId ?? "");
+    setEditAvatar(user.avatarUrl ?? "");
     setEditImgError(null);
     // Close create form if open
     setShowForm(false);
   }
 
-  function saveEdit(userId: string) {
-    if (!editName.trim() || !editEmail.trim()) return;
-    const updatedAvatar = editAvatar || undefined;
-    if (editAvatar) updateUserAvatarUrl(editName.trim(), editAvatar);
-    setUsers(users.map((u) =>
-      u.id === userId
-        ? { ...u, name: editName.trim(), email: editEmail.trim(), position: editPosition, role: editRole, squad: editSquad, avatar_url: updatedAvatar }
-        : u
-    ));
-    setEditingId(null);
+  async function saveEdit(userId: string) {
+    if (!editName.trim()) return;
+    setApiError(null);
+    setEditSaving(true);
+    try {
+      const res = await fetch(`/api/users/${userId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name:      editName.trim(),
+          role:      editRole,
+          position:  editPosition,
+          avatarUrl: editAvatar || null,
+          squadId:   editSquadId || null,
+        }),
+      });
+      let data: any;
+      try { data = await res.json(); } catch { data = {}; }
+      if (!res.ok) {
+        setApiError(data.error ?? `Error ${res.status} — try restarting the dev server`);
+        return;
+      }
+      setUsers(users.map((u) =>
+        u.id === userId ? { ...u, ...data, active: u.active } : u
+      ));
+      setEditingId(null);
+      router.refresh(); // re-fetch server component → syncs DB state
+    } catch (err: any) {
+      setApiError("Network error — " + (err?.message ?? "please try again"));
+    } finally {
+      setEditSaving(false);
+    }
   }
 
   function cancelEdit() {
@@ -178,6 +242,17 @@ export default function UsersClient({ initialUsers, squads: squadsProp }: Props)
 
   return (
     <div className="space-y-6">
+
+      {/* ── API error banner ───────────────────────────────────────────────── */}
+      {apiError && (
+        <div className="flex items-center gap-3 px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-xl text-sm text-red-400">
+          <span className="material-symbols-outlined text-[18px] shrink-0">error</span>
+          <span className="flex-1">{apiError}</span>
+          <button onClick={() => setApiError(null)} className="text-red-400/60 hover:text-red-400">
+            <span className="material-symbols-outlined text-[16px]">close</span>
+          </button>
+        </div>
+      )}
 
       {/* ── Toolbar ───────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -305,7 +380,7 @@ export default function UsersClient({ initialUsers, squads: squadsProp }: Props)
                 className="w-full px-3 py-2 text-sm border border-primary/20 bg-background-dark text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               >
                 {ROLES.map((r) => (
-                  <option key={r} value={r}>{r}</option>
+                  <option key={r} value={r}>{ROLE_DISPLAY[r]}</option>
                 ))}
               </select>
             </div>
@@ -315,13 +390,13 @@ export default function UsersClient({ initialUsers, squads: squadsProp }: Props)
                 {t.settings.users.squad}
               </label>
               <select
-                value={formSquad}
-                onChange={(e) => setFormSquad(e.target.value)}
+                value={formSquadId}
+                onChange={(e) => setFormSquadId(e.target.value)}
                 className="w-full px-3 py-2 text-sm border border-primary/20 bg-background-dark text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               >
                 <option value="">{t.settings.users.noSquad}</option>
                 {SQUADS.map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                  <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </select>
             </div>
@@ -346,13 +421,14 @@ export default function UsersClient({ initialUsers, squads: squadsProp }: Props)
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
                   className="hidden"
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
                     const err = validateImageFile(file);
                     if (err) { setFormImgError(err); return; }
                     setFormImgError(null);
-                    setFormAvatar(URL.createObjectURL(file));
+                    const dataUrl = await readFileAsDataUrl(file);
+                    setFormAvatar(dataUrl);
                   }}
                 />
                 <div className="flex items-center gap-2">
@@ -391,10 +467,11 @@ export default function UsersClient({ initialUsers, squads: squadsProp }: Props)
             </button>
             <button
               type="submit"
-              className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
+              disabled={formSaving}
+              className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[16px]">person_add</span>
-              {t.settings.users.saveUser}
+              {formSaving ? "Saving…" : t.settings.users.saveUser}
             </button>
           </div>
         </form>
@@ -473,13 +550,14 @@ export default function UsersClient({ initialUsers, squads: squadsProp }: Props)
                             type="file"
                             accept="image/jpeg,image/png,image/webp"
                             className="hidden"
-                            onChange={(e) => {
+                            onChange={async (e) => {
                               const file = e.target.files?.[0];
                               if (!file) return;
                               const err = validateImageFile(file);
                               if (err) { setEditImgError(err); return; }
                               setEditImgError(null);
-                              setEditAvatar(URL.createObjectURL(file));
+                              const dataUrl = await readFileAsDataUrl(file);
+                              setEditAvatar(dataUrl);
                             }}
                           />
                           <div className="flex-1 min-w-0">
@@ -505,15 +583,8 @@ export default function UsersClient({ initialUsers, squads: squadsProp }: Props)
                         </div>
                       </td>
 
-                      {/* Email (editable) */}
-                      <td className="px-4 py-3">
-                        <input
-                          type="email"
-                          value={editEmail}
-                          onChange={(e) => setEditEmail(e.target.value)}
-                          className="w-full px-2 py-1.5 text-sm border border-primary/30 bg-background-dark text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                        />
-                      </td>
+                      {/* Email (read-only in edit — email changes need separate flow) */}
+                      <td className="px-4 py-3 text-slate-400 truncate max-w-0">{user.email}</td>
 
                       {/* Position (editable) */}
                       <td className="px-4 py-3">
@@ -536,7 +607,7 @@ export default function UsersClient({ initialUsers, squads: squadsProp }: Props)
                           className="w-full px-2 py-1.5 text-sm border border-primary/30 bg-background-dark text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                         >
                           {ROLES.map((r) => (
-                            <option key={r} value={r}>{r}</option>
+                            <option key={r} value={r}>{ROLE_DISPLAY[r]}</option>
                           ))}
                         </select>
                       </td>
@@ -544,13 +615,13 @@ export default function UsersClient({ initialUsers, squads: squadsProp }: Props)
                       {/* Squad (editable) */}
                       <td className="px-4 py-3">
                         <select
-                          value={editSquad}
-                          onChange={(e) => setEditSquad(e.target.value)}
+                          value={editSquadId}
+                          onChange={(e) => setEditSquadId(e.target.value)}
                           className="w-full px-2 py-1.5 text-sm border border-primary/30 bg-background-dark text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                         >
                           <option value="">{t.settings.users.noSquad}</option>
                           {SQUADS.map((s) => (
-                            <option key={s} value={s}>{s}</option>
+                            <option key={s.id} value={s.id}>{s.name}</option>
                           ))}
                         </select>
                       </td>
@@ -571,11 +642,12 @@ export default function UsersClient({ initialUsers, squads: squadsProp }: Props)
                         <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => saveEdit(user.id)}
+                            disabled={editSaving}
                             title="Save changes"
-                            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
+                            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
                           >
                             <span className="material-symbols-outlined text-[14px]">check</span>
-                            {t.settings.users.saveUser}
+                            {editSaving ? "…" : t.settings.users.saveUser}
                           </button>
                           <button
                             onClick={cancelEdit}
@@ -595,7 +667,7 @@ export default function UsersClient({ initialUsers, squads: squadsProp }: Props)
                         <div className="flex items-center gap-3">
                           <Avatar
                             name={user.name}
-                            avatarUrl={user.avatar_url}
+                            avatarUrl={user.avatarUrl}
                             size="size-8"
                             textSize="text-xs"
                             className={user.active ? "" : "opacity-50"}
@@ -627,7 +699,7 @@ export default function UsersClient({ initialUsers, squads: squadsProp }: Props)
                         <span
                           className={`inline-block text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wide ${ROLE_BADGE[user.role]}`}
                         >
-                          {user.role}
+                          {ROLE_DISPLAY[user.role]}
                         </span>
                       </td>
 

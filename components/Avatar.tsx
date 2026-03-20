@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { MOCK_USERS } from "@/lib/users";
 
 // ─── Deterministic per-name color palette ─────────────────────────────────────
 
@@ -30,11 +29,7 @@ function initials(name: string): string {
 interface AvatarProps {
   /** User display name — used for initials fallback and color. */
   name: string;
-  /**
-   * Explicit avatar URL.
-   * - If provided (even empty string), it takes priority over the MOCK_USERS lookup.
-   * - If omitted (undefined), the component looks up avatar_url from MOCK_USERS.
-   */
+  /** Avatar URL (base64 data URL or https URL). Initials fallback used when absent. */
   avatarUrl?: string;
   /** Tailwind container size class, e.g. "size-7". Default: "size-7". */
   size?: string;
@@ -55,11 +50,8 @@ export default function Avatar({
 }: AvatarProps) {
   const [imgError, setImgError] = useState(false);
 
-  // Resolve URL: explicit prop > MOCK_USERS lookup > no image
-  const resolvedUrl =
-    avatarUrl !== undefined
-      ? (avatarUrl || undefined)
-      : (MOCK_USERS.find((u) => u.name === name)?.avatar_url || undefined);
+  // Resolve URL: use explicit prop if provided, else no image
+  const resolvedUrl = avatarUrl || undefined;
 
   const showImg  = !!resolvedUrl && !imgError;
   const colorCls = colorForName(name);

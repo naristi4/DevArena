@@ -23,7 +23,7 @@ const PERMISSIONS: Record<Role, readonly Action[]> = {
     "tasks:edit_all",
     "tasks:edit_assigned",
   ],
-  "Squad Member": [
+  "SquadMember": [
     "tasks:edit_assigned",
   ],
 };

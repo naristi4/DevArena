@@ -1,0 +1,222 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                  String         @id @default(cuid())
+  name                String
+  email               String         @unique
+  password            String
+  role                Role           @default(SquadMember)
+  position            Position?
+  avatarUrl           String?
+  squadId             String?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  uploadedAttachments Attachment[]
+  comments            Comment[]
+  notifications       Notification[]
+  createdProjects     Project[]      @relation("ProjectCreator")
+  leadingSquads       Squad[]        @relation("SquadLead")
+  assignedSubtasks    Subtask[]      @relation("SubtaskAssignee")
+  assignedTasks       Task[]         @relation("TaskAssignee")
+  squad               Squad?         @relation("SquadMembers", fields: [squadId], references: [id])
+  mvpAwards           WeeklyAward[]  @relation("MvpUser")
+}
+
+model Squad {
+  id             String        @id @default(cuid())
+  name           String        @unique
+  description    String?
+  leadId         String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  projects       Project[]
+  lead           User?         @relation("SquadLead", fields: [leadId], references: [id])
+  members        User[]        @relation("SquadMembers")
+  topSquadAwards WeeklyAward[] @relation("TopSquad")
+}
+
+model Project {
+  id             String         @id @default(cuid())
+  title          String
+  description    String?
+  status         PipelineStatus @default(opportunity)
+  impact         String?
+  prdUrl         String?
+  oddUrl         String?
+  trdUrl         String?
+  startDate      DateTime?
+  targetEndDate  DateTime?
+  completionDate DateTime?
+  deleted        Boolean        @default(false)
+  squadId        String?
+  createdById    String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  attachments    Attachment[]
+  bugs           Bug[]
+  createdBy      User?          @relation("ProjectCreator", fields: [createdById], references: [id])
+  squad          Squad?         @relation(fields: [squadId], references: [id])
+  tasks          Task[]
+}
+
+model Task {
+  id             String       @id @default(cuid())
+  title          String
+  description    String?
+  status         TaskStatus   @default(backlog)
+  type           TaskType     @default(task)
+  priority       TaskPriority @default(medium)
+  estimatedTime  Float?
+  actualTime     Float?
+  targetEndDate  DateTime?
+  startDate      DateTime?
+  completionDate DateTime?
+  projectId      String
+  assigneeId     String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  comments       Comment[]
+  subtasks       Subtask[]
+  assignee       User?        @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Subtask {
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  status      SubtaskStatus @default(todo)
+  taskId      String
+  assigneeId  String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  assignee    User?         @relation("SubtaskAssignee", fields: [assigneeId], references: [id])
+  task        Task          @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  body      String
+  taskId    String
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  author    User     @relation(fields: [authorId], references: [id])
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+model Bug {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  severity    BugSeverity @default(minor)
+  projectId   String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Attachment {
+  id           String   @id @default(cuid())
+  fileName     String
+  fileUrl      String
+  projectId    String
+  uploadedById String?
+  createdAt    DateTime @default(now())
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploadedBy   User?    @relation(fields: [uploadedById], references: [id])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  type      NotificationType
+  title     String?
+  message   String
+  taskId    String?
+  projectId String?
+  fromName  String?
+  link      String?
+  read      Boolean          @default(false)
+  userId    String
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WeeklyAward {
+  id         String   @id @default(cuid())
+  weekStart  DateTime
+  weekEnd    DateTime
+  topSquadId String?
+  mvpUserId  String?
+  createdAt  DateTime @default(now())
+  mvpUser    User?    @relation("MvpUser", fields: [mvpUserId], references: [id])
+  topSquad   Squad?   @relation("TopSquad", fields: [topSquadId], references: [id])
+}
+
+enum Role {
+  Admin
+  SquadMember
+}
+
+enum Position {
+  Developer
+  Architect
+  PM
+}
+
+enum TaskStatus {
+  backlog
+  in_progress
+  review
+  ready_to_release
+  done
+}
+
+enum TaskType {
+  task
+  bug
+  iteration
+}
+
+enum TaskPriority {
+  urgent
+  high
+  medium
+  low
+}
+
+enum SubtaskStatus {
+  todo
+  in_progress
+  done
+}
+
+enum PipelineStatus {
+  opportunity
+  ideation
+  technical_design
+  active_development
+  release
+  iteration
+  clean_up
+  completed
+}
+
+enum BugSeverity {
+  minor
+  major
+  critical
+}
+
+enum NotificationType {
+  mention
+  weekly_awards
+}

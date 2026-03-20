@@ -1,6 +1,7 @@
 import { NextAuthOptions } from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import { MOCK_USERS } from "./users";
+import CredentialsProvider  from "next-auth/providers/credentials";
+import bcrypt               from "bcryptjs";
+import { prisma }           from "./prisma";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -13,20 +14,22 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const user = MOCK_USERS.find(
-          (u) =>
-            u.email === credentials.email &&
-            u.password === credentials.password
-        );
+        const user = await prisma.user.findUnique({
+          where:   { email: credentials.email },
+          include: { squad: true },
+        });
 
         if (!user) return null;
+
+        const valid = await bcrypt.compare(credentials.password, user.password);
+        if (!valid) return null;
 
         return {
           id:    user.id,
           name:  user.name,
           email: user.email,
           role:  user.role,
-          squad: user.squad,
+          squad: user.squad?.name ?? "",
         };
       },
     }),

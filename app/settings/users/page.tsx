@@ -1,8 +1,9 @@
+export const dynamic = "force-dynamic"; // always fetch fresh data from DB
+
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
-import { MOCK_USERS } from "@/lib/users";
-import { MOCK_SQUADS } from "@/lib/squads";
+import { prisma } from "@/lib/prisma";
 import UsersClient from "@/components/UsersClient";
 
 export default async function SettingsUsersPage() {
@@ -10,8 +11,22 @@ export default async function SettingsUsersPage() {
   if (!session) redirect("/login");
   if (session.user.role !== "Admin") redirect("/");
 
-  // Strip passwords before passing to client
-  const users = MOCK_USERS.map(({ password: _, ...u }) => u);
+  const [dbUsers, dbSquads] = await Promise.all([
+    prisma.user.findMany({
+      include:  { squad: true },
+      orderBy:  { name: "asc" },
+    }),
+    prisma.squad.findMany({ orderBy: { name: "asc" } }),
+  ]);
+
+  // Strip password before sending to client
+  const users = dbUsers.map(({ password: _, ...u }) => ({
+    ...u,
+    squad:   u.squad?.name ?? "",
+    squadId: u.squadId ?? null,
+  }));
+
+  const squads = dbSquads.map((s) => ({ id: s.id, name: s.name }));
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -23,7 +38,7 @@ export default async function SettingsUsersPage() {
         </p>
       </div>
 
-      <UsersClient initialUsers={users} squads={MOCK_SQUADS.map((s) => s.name)} />
+      <UsersClient initialUsers={users} squads={squads} />
     </div>
   );
 }

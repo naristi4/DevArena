@@ -4,7 +4,7 @@ import { authOptions }     from "@/lib/auth";
 import { getMockPipelineItems }       from "@/lib/pipeline";
 import { MOCK_SQUADS }                from "@/lib/squads";
 import { MOCK_TASKS, ACTIVE_STATUSES } from "@/lib/tasks";
-import { MOCK_USERS }                 from "@/lib/users";
+import { prisma }                     from "@/lib/prisma";
 import PipelineShell                  from "@/components/PipelineShell";
 import type { ActiveTask }            from "@/components/ActiveTasksBoard";
 
@@ -16,7 +16,7 @@ export default async function PipelinePage() {
   const userSquad   = session.user.squad ?? "";
 
   const squads      = MOCK_SQUADS.map((s) => s.name);
-  const users       = MOCK_USERS.map((u) => u.name);
+  const users       = (await prisma.user.findMany({ select: { name: true }, orderBy: { name: "asc" } })).map((u) => u.name);
   const currentUser = session.user?.name ?? "Unknown";
 
   // ── Scope pipeline items to the user's squad for Squad Members ──────────────

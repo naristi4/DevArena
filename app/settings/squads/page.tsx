@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { MOCK_SQUADS } from "@/lib/squads";
-import { MOCK_USERS } from "@/lib/users";
+import { prisma } from "@/lib/prisma";
 import SquadsClient from "@/components/SquadsClient";
 
 export default async function SettingsSquadsPage() {
@@ -11,7 +11,8 @@ export default async function SettingsSquadsPage() {
   if (session.user.role !== "Admin") redirect("/");
 
   // Strip passwords before passing to client
-  const users = MOCK_USERS.map(({ password: _, ...u }) => u);
+  const dbUsersRaw = await prisma.user.findMany({ include: { squad: true }, orderBy: { name: "asc" } });
+  const users = dbUsersRaw.map(({ password: _, squad, ...u }) => ({ ...u, squad: squad?.name ?? "" }));
 
   return (
     <div className="max-w-5xl mx-auto">
