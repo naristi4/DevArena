@@ -27,7 +27,7 @@ export default async function PipelinePage() {
         createdBy: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: "desc" },
-    }),
+    }).catch(() => []),   // empty list if Project table doesn't exist yet
   ]);
 
   const squads = squadsRaw.map((s) => s.name);

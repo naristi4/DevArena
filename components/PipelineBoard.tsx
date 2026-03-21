@@ -105,6 +105,9 @@ export default function PipelineBoard({ initialItems, squads, currentUser }: Pro
   const [draggedId, setDraggedId]     = useState<string | null>(null);
   const [error, setError]             = useState("");
 
+  // Sync with fresh server data after router.refresh()
+  useEffect(() => { setItems(initialItems); }, [initialItems]);
+
   const [formTitle,  setFormTitle]  = useState("");
   const [formDesc,   setFormDesc]   = useState("");
   const [formImpact, setFormImpact] = useState<PipelineImpact>("Eficiencias/margen");
