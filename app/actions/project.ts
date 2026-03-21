@@ -1,15 +1,17 @@
 "use server";
 
-import { deleteProjectById } from "@/lib/pipeline";
-import { revalidatePath }    from "next/cache";
-import { redirect }          from "next/navigation";
+import { prisma }        from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
+import { redirect }       from "next/navigation";
 
 /**
- * Soft-deletes a project and all its pages, then redirects to /pipeline.
- * Data resets on server restart (mock only — no real DB).
+ * Soft-deletes a project then redirects to /pipeline.
  */
 export async function deleteProject(id: string): Promise<void> {
-  deleteProjectById(id);
+  await prisma.project.update({
+    where: { id },
+    data:  { deleted: true },
+  });
   revalidatePath("/pipeline");
   redirect("/pipeline");
 }

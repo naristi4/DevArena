@@ -23,10 +23,29 @@ export default function ProjectDetailActions({ item, squads, isAdmin }: Props) {
   const [showDeleteConfirm,  setShowDeleteConfirm]  = useState(false);
   const [deleting,           setDeleting]           = useState(false);
 
-  function handleEditSave(updated: PipelineItem) {
+  async function handleEditSave(updated: PipelineItem) {
+    try {
+      await fetch(`/api/projects/${updated.id}`, {
+        method:  "PUT",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({
+          title:           updated.title,
+          description:     updated.description,
+          impact:          updated.impact,
+          squadName:       updated.squad,
+          prd_url:         updated.prd_url,
+          odd_url:         updated.odd_url,
+          trd_url:         updated.trd_url,
+          start_date:      updated.start_date,
+          target_end_date: updated.target_end_date,
+          completion_date: updated.completion_date ?? "",
+        }),
+      });
+    } catch {
+      // Best-effort — still update local state and refresh
+    }
     setLocalItem(updated);
     setShowEditModal(false);
-    // Refresh server-rendered content to reflect the edit
     router.refresh();
   }
 

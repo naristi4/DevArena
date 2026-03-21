@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   DndContext,
@@ -85,6 +86,7 @@ export default function PipelineBoard({ initialItems, squads, currentUser }: Pro
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "Admin";
   const { t } = useLanguage();
+  const router = useRouter();
 
   const STAGE_LABELS: Record<string, string> = {
     opportunity:        t.pipeline.stages.opportunity,
@@ -101,6 +103,7 @@ export default function PipelineBoard({ initialItems, squads, currentUser }: Pro
   const [showForm, setShowForm]       = useState(false);
   const [editingItem, setEditingItem] = useState<PipelineItem | null>(null);
   const [draggedId, setDraggedId]     = useState<string | null>(null);
+  const [error, setError]             = useState("");
 
   const [formTitle,  setFormTitle]  = useState("");
   const [formDesc,   setFormDesc]   = useState("");
@@ -108,11 +111,8 @@ export default function PipelineBoard({ initialItems, squads, currentUser }: Pro
   const [formSquad,  setFormSquad]  = useState("");
 
   // ── Squad filter — persisted in localStorage ────────────────────────────────
-  // Initialised to "" so server render and first client render match (no hydration mismatch).
-  // useEffect restores the saved value immediately after mount.
-  const [squadFilter,  setSquadFilter]  = useState("");
-  // ── Search query — session-only, no persistence needed ──────────────────────
-  const [searchQuery,  setSearchQuery]  = useState("");
+  const [squadFilter, setSquadFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const saved = localStorage.getItem(SQUAD_FILTER_KEY) ?? "";
@@ -143,38 +143,54 @@ export default function PipelineBoard({ initialItems, squads, currentUser }: Pro
     if (!isAdmin) return;
     const { active, over } = event;
     if (!over) return;
+    const itemId    = String(active.id);
     const newStatus = over.id as PipelineStatus;
-    setItems((prev) =>
-      prev.map((i) =>
-        i.id === String(active.id) && i.status !== newStatus
-          ? { ...i, status: newStatus }
-          : i,
-      ),
-    );
+    const prevItem  = items.find((i) => i.id === itemId);
+    if (!prevItem || prevItem.status === newStatus) return;
+
+    // Optimistic update
+    setItems((prev) => prev.map((i) => i.id === itemId ? { ...i, status: newStatus } : i));
+
+    // Persist to DB (revert on failure)
+    fetch(`/api/projects/${itemId}`, {
+      method:  "PUT",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ status: newStatus }),
+    }).then((res) => {
+      if (!res.ok) setItems((prev) => prev.map((i) => i.id === itemId ? prevItem : i));
+    }).catch(() => {
+      setItems((prev) => prev.map((i) => i.id === itemId ? prevItem : i));
+    });
   }
 
   // ── Create ─────────────────────────────────────────────────────────────────
-  function handleCreate(e: React.FormEvent) {
+  async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!formTitle.trim()) return;
-    const newItem: PipelineItem = {
-      id:                      String(Date.now()),
-      title:                   formTitle.trim(),
-      description:             formDesc.trim(),
-      status:                  "opportunity",
-      squad:                   formSquad,
-      impact:                  formImpact,
-      created_by:              currentUser,
-      created_at:              new Date().toISOString(),
-      prd_url:                 "",
-      odd_url:                 "",
-      trd_url:                 "",
-      start_date:      "",
-      target_end_date: "",
-      attachments:     [],
-    };
-    setItems([newItem, ...items]);
-    resetForm();
+    setError("");
+    try {
+      const res = await fetch("/api/projects", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({
+          title:     formTitle.trim(),
+          description: formDesc.trim(),
+          impact:    formImpact,
+          squadName: formSquad,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error ?? "Failed to create project");
+        return;
+      }
+      const created: PipelineItem = await res.json();
+      setItems((prev) => [created, ...prev]);
+      resetForm();
+      router.refresh();
+    } catch {
+      setError("Network error — please try again");
+    }
   }
 
   function resetForm() {
@@ -184,13 +200,42 @@ export default function PipelineBoard({ initialItems, squads, currentUser }: Pro
 
   // ── Move (quick advance button) ────────────────────────────────────────────
   function moveItem(id: string, next: PipelineStatus) {
+    const prevItem = items.find((i) => i.id === id);
     setItems(items.map((item) => (item.id === id ? { ...item, status: next } : item)));
+    fetch(`/api/projects/${id}`, {
+      method:  "PUT",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ status: next }),
+    }).catch(() => {
+      if (prevItem) setItems((prev) => prev.map((i) => i.id === id ? prevItem : i));
+    });
   }
 
   // ── Edit save ──────────────────────────────────────────────────────────────
-  function handleEditSave(updated: PipelineItem) {
+  async function handleEditSave(updated: PipelineItem) {
     setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
     setEditingItem(null);
+    try {
+      await fetch(`/api/projects/${updated.id}`, {
+        method:  "PUT",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({
+          title:           updated.title,
+          description:     updated.description,
+          impact:          updated.impact,
+          squadName:       updated.squad,
+          prd_url:         updated.prd_url,
+          odd_url:         updated.odd_url,
+          trd_url:         updated.trd_url,
+          start_date:      updated.start_date,
+          target_end_date: updated.target_end_date,
+          completion_date: updated.completion_date ?? "",
+        }),
+      });
+      router.refresh();
+    } catch {
+      setError("Failed to save project — please try again");
+    }
   }
 
   const draggedItem  = draggedId ? items.find((i) => i.id === draggedId) ?? null : null;
@@ -201,6 +246,13 @@ export default function PipelineBoard({ initialItems, squads, currentUser }: Pro
 
   return (
     <div className="space-y-6">
+
+      {/* ── Error banner ─────────────────────────────────────────────────────── */}
+      {error && (
+        <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3.5 py-2.5">
+          {error}
+        </p>
+      )}
 
       {/* ── Toolbar ────────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
