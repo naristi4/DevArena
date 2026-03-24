@@ -126,6 +126,7 @@ model Bug {
 
 model Attachment {
   id           String   @id @default(cuid())
+  type         String   @default("file") // "file" | "link"
   fileName     String
   fileUrl      String
   projectId    String

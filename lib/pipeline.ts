@@ -37,10 +37,11 @@ export type PipelineImpact =
 
 export interface Attachment {
   id:          string;
-  file_name:   string;
-  file_url:    string;
+  type:        "file" | "link";  // "file" = uploaded file, "link" = external URL
+  file_name:   string;           // display name
+  file_url:    string;           // storage URL (files) or external URL (links)
   uploaded_by: string;
-  uploaded_at: string; // ISO datetime
+  uploaded_at: string;           // ISO datetime
 }
 
 export interface PipelineItem {
@@ -194,6 +195,7 @@ export const MOCK_PIPELINE_ITEMS: PipelineItem[] = [
     attachments:             [
       {
         id:          "att-1",
+        type:        "file" as const,
         file_name:   "architecture-diagram.pdf",
         file_url:    "https://example.com/files/architecture-diagram.pdf",
         uploaded_by: "Alice Johnson",
@@ -236,6 +238,7 @@ export const MOCK_PIPELINE_ITEMS: PipelineItem[] = [
     attachments:             [
       {
         id:          "att-2",
+        type:        "file" as const,
         file_name:   "payment-flow-diagram.png",
         file_url:    "https://example.com/files/payment-flow-diagram.png",
         uploaded_by: "Eva Chen",
@@ -243,6 +246,7 @@ export const MOCK_PIPELINE_ITEMS: PipelineItem[] = [
       },
       {
         id:          "att-3",
+        type:        "file" as const,
         file_name:   "reconciliation-spec.docx",
         file_url:    "https://example.com/files/reconciliation-spec.docx",
         uploaded_by: "Bob Smith",
@@ -287,6 +291,7 @@ export const MOCK_PIPELINE_ITEMS: PipelineItem[] = [
     attachments:             [
       {
         id:          "att-4",
+        type:        "file" as const,
         file_name:   "openapi-spec.pdf",
         file_url:    "https://example.com/files/openapi-spec.pdf",
         uploaded_by: "Dan Torres",

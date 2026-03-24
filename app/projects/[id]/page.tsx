@@ -25,7 +25,7 @@ export default async function ProjectDetailPage({
 
   const { id } = await params;
 
-  const [dbProject, userNamesRaw, squadsRaw] = await Promise.all([
+  const [dbProject, userNamesRaw, squadsRaw, dbAttachments] = await Promise.all([
     prisma.project.findFirst({
       where:   { id, deleted: false },
       include: {
@@ -35,6 +35,11 @@ export default async function ProjectDetailPage({
     }),
     prisma.user.findMany({ select: { name: true }, orderBy: { name: "asc" } }),
     prisma.squad.findMany({ select: { name: true }, orderBy: { name: "asc" } }),
+    prisma.attachment.findMany({
+      where:   { projectId: id },
+      include: { uploadedBy: { select: { name: true } } },
+      orderBy: { createdAt: "desc" },
+    }),
   ]);
 
   if (!dbProject) notFound();
@@ -56,7 +61,14 @@ export default async function ProjectDetailPage({
     start_date:      fmtDate(dbProject.startDate),
     target_end_date: fmtDate(dbProject.targetEndDate),
     completion_date: dbProject.completionDate ? fmtDate(dbProject.completionDate) : undefined,
-    attachments:     [],
+    attachments: dbAttachments.map((a) => ({
+      id:          a.id,
+      type:        (a.type ?? "file") as "file" | "link",
+      file_name:   a.fileName,
+      file_url:    a.fileUrl,
+      uploaded_by: a.uploadedBy?.name ?? "Unknown",
+      uploaded_at: a.createdAt.toISOString(),
+    })),
   };
 
   const userNames = userNamesRaw.map((u) => u.name);

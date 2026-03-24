@@ -356,9 +356,11 @@ export default function ProjectDetailContent({
 
           {/* Additional Documents (attachments) */}
           <ProjectAttachments
+            projectId={item.id}
             initialAttachments={item.attachments ?? []}
             currentUser={currentUser}
             isAdmin={isAdmin}
+            canEdit={canEdit}
           />
 
           {/* Activity Feed */}
