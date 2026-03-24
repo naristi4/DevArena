@@ -1,11 +1,12 @@
 import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { MOCK_TASKS } from "@/lib/tasks";
 import { prisma } from "@/lib/prisma";
 import { getSquadLeaderboard } from "@/lib/gamification";
 import ProjectDetailContent from "@/components/ProjectDetailContent";
 import type { PipelineItem } from "@/lib/pipeline";
+import type { Task } from "@/lib/tasks";
+import type { Subtask } from "@/lib/subtasks";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,7 @@ export default async function ProjectDetailPage({
 
   const { id } = await params;
 
-  const [dbProject, userNamesRaw, squadsRaw, dbAttachments] = await Promise.all([
+  const [dbProject, userNamesRaw, squadsRaw, dbAttachments, dbTasks] = await Promise.all([
     prisma.project.findFirst({
       where:   { id, deleted: false },
       include: {
@@ -39,6 +40,17 @@ export default async function ProjectDetailPage({
       where:   { projectId: id },
       include: { uploadedBy: { select: { name: true } } },
       orderBy: { createdAt: "desc" },
+    }),
+    prisma.task.findMany({
+      where:   { projectId: id },
+      include: {
+        assignee: { select: { name: true } },
+        subtasks: {
+          include:  { assignee: { select: { name: true } } },
+          orderBy:  { createdAt: "asc" },
+        },
+      },
+      orderBy: { createdAt: "asc" },
     }),
   ]);
 
@@ -71,19 +83,46 @@ export default async function ProjectDetailPage({
     })),
   };
 
+  // ── Map DB tasks → Task interface ────────────────────────────────────────────
+  const tasks: Task[] = dbTasks.map((t) => ({
+    id:              t.id,
+    title:           t.title,
+    description:     t.description  ?? "",
+    project_id:      t.projectId,
+    assigned_to:     t.assignee?.name ?? "",
+    estimated_time:  t.estimatedTime  ?? 0,
+    actual_time:     t.actualTime     ?? 0,
+    status:          t.status   as Task["status"],
+    type:            t.type     as Task["type"],
+    priority:        t.priority as Task["priority"],
+    target_end_date: t.targetEndDate  ? fmtDate(t.targetEndDate)  : undefined,
+    start_date:      t.startDate      ? fmtDate(t.startDate)      : undefined,
+    completion_date: t.completionDate ? fmtDate(t.completionDate) : undefined,
+  }));
+
+  // ── Map DB subtasks → Subtask interface, grouped by task ─────────────────────
+  const initialSubtasks: Record<string, Subtask[]> = {};
+  for (const t of dbTasks) {
+    initialSubtasks[t.id] = t.subtasks.map((st) => ({
+      id:            st.id,
+      task_id:       st.taskId,
+      title:         st.title,
+      description:   st.description  ?? "",
+      status:        st.status as Subtask["status"],
+      assigned_user: st.assignee?.name ?? "",
+    }));
+  }
+
   const userNames = userNamesRaw.map((u) => u.name);
   const squads    = squadsRaw.map((s) => s.name);
 
-  // Tasks are still mock — task module not yet migrated
-  const tasks = MOCK_TASKS.filter((t) => t.project_id === id);
-
-  // ── Edit permission ─────────────────────────────────────────────────────────
+  // ── Edit permission ──────────────────────────────────────────────────────────
   const userSquad = (session.user as { squad?: string }).squad;
   const userRole  = (session.user as { role?: string }).role;
   const isAdmin   = userRole === "Admin";
   const canEdit   = isAdmin || (!!item.squad && item.squad === userSquad);
 
-  // ── Timeline metrics ────────────────────────────────────────────────────────
+  // ── Timeline metrics ─────────────────────────────────────────────────────────
   const totalTasks  = tasks.length;
   const doneCount   = tasks.filter((t) => t.status === "done").length;
   const progressPct = totalTasks > 0 ? Math.round((doneCount / totalTasks) * 100) : 0;
@@ -102,7 +141,7 @@ export default async function ProjectDetailPage({
     ? Math.min(Math.round((daysElapsed / daysPlanned) * 100), 100)
     : 0;
 
-  // ── On-time delivery ────────────────────────────────────────────────────────
+  // ── On-time delivery ─────────────────────────────────────────────────────────
   const doneWithDates = tasks.filter(
     (t) => t.status === "done" && t.target_end_date && t.completion_date && t.type !== "iteration"
   );
@@ -112,7 +151,7 @@ export default async function ProjectDetailPage({
     ? Math.round((onTimeCount / doneWithDates.length) * 100)
     : null;
 
-  // ── Team members ────────────────────────────────────────────────────────────
+  // ── Team members ─────────────────────────────────────────────────────────────
   const squadLeaders = getSquadLeaderboard(false);
   const squadData    = squadLeaders.find((s) => s.squad === item.squad);
   const teamMembers  = squadData?.members ?? [];
@@ -121,6 +160,7 @@ export default async function ProjectDetailPage({
     <ProjectDetailContent
       item={item}
       tasks={tasks}
+      initialSubtasks={initialSubtasks}
       userNames={userNames}
       squads={squads}
       currentUser={(session.user as { name?: string })?.name ?? ""}

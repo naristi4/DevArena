@@ -7,6 +7,7 @@ import TaskBoard from "@/components/TaskBoard";
 import ProjectDetailActions from "@/components/ProjectDetailActions";
 import ProjectAttachments from "@/components/ProjectAttachments";
 import type { Task } from "@/lib/tasks";
+import type { Subtask } from "@/lib/subtasks";
 import Avatar from "@/components/Avatar";
 
 // ─── Sub-component ────────────────────────────────────────────────────────────
@@ -50,9 +51,10 @@ const STATUS_BADGE_STYLE: Record<string, { bg: string; dot: string }> = {
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
-  item:          PipelineItem;
-  tasks:         Task[];
-  userNames:     string[];
+  item:             PipelineItem;
+  tasks:            Task[];
+  initialSubtasks:  Record<string, Subtask[]>;
+  userNames:        string[];
   squads:        string[];
   currentUser:   string;
   isAdmin:       boolean;
@@ -86,6 +88,7 @@ function formatDate(iso: string) {
 export default function ProjectDetailContent({
   item,
   tasks,
+  initialSubtasks,
   userNames,
   squads,
   currentUser,
@@ -241,6 +244,7 @@ export default function ProjectDetailContent({
             </div>
             <TaskBoard
               initialTasks={tasks}
+              initialSubtasks={initialSubtasks}
               projectId={item.id}
               users={userNames}
               project={{

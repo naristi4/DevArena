@@ -1,7 +1,7 @@
 import { redirect }        from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions }      from "@/lib/auth";
-import { MOCK_TASKS, ACTIVE_STATUSES } from "@/lib/tasks";
+import { ACTIVE_STATUSES }  from "@/lib/tasks";
 import { prisma }           from "@/lib/prisma";
 import PipelineShell        from "@/components/PipelineShell";
 import type { ActiveTask }  from "@/components/ActiveTasksBoard";
@@ -58,17 +58,42 @@ export default async function PipelinePage() {
     ? allItems
     : allItems.filter((p) => p.squad === userSquad);
 
-  // Active tasks still use mock data — tasks module not yet migrated
-  const projectMap = Object.fromEntries(squadItems.map((p) => [p.id, p]));
-  const activeTasks: ActiveTask[] = MOCK_TASKS
-    .filter((t) => (ACTIVE_STATUSES as string[]).includes(t.status))
-    .filter((t) => projectMap[t.project_id] !== undefined)
-    .map((t) => ({
-      ...t,
-      projectTitle: projectMap[t.project_id]?.title          ?? "—",
-      projectSquad: projectMap[t.project_id]?.squad          ?? "",
-      dueDate:      projectMap[t.project_id]?.target_end_date ?? "",
-    }));
+  // Load active tasks from DB, scoped to visible projects
+  const visibleProjectIds = squadItems.map((p) => p.id);
+  const projectMap        = Object.fromEntries(squadItems.map((p) => [p.id, p]));
+
+  const dbActiveTasks = visibleProjectIds.length > 0
+    ? await prisma.task.findMany({
+        where: {
+          projectId: { in: visibleProjectIds },
+          status:    { in: ACTIVE_STATUSES as string[] as never[] },
+        },
+        include: {
+          assignee: { select: { name: true } },
+          subtasks: { include: { assignee: { select: { name: true } } }, orderBy: { createdAt: "asc" } },
+        },
+        orderBy: { createdAt: "asc" },
+      }).catch(() => [])
+    : [];
+
+  const activeTasks: ActiveTask[] = dbActiveTasks.map((t) => ({
+    id:              t.id,
+    title:           t.title,
+    description:     t.description     ?? "",
+    project_id:      t.projectId,
+    assigned_to:     t.assignee?.name  ?? "",
+    estimated_time:  t.estimatedTime   ?? 0,
+    actual_time:     t.actualTime      ?? 0,
+    status:          t.status          as ActiveTask["status"],
+    type:            t.type            as ActiveTask["type"],
+    priority:        t.priority        as ActiveTask["priority"],
+    target_end_date: t.targetEndDate   ? fmtDate(t.targetEndDate)  : undefined,
+    start_date:      t.startDate       ? fmtDate(t.startDate)      : undefined,
+    completion_date: t.completionDate  ? fmtDate(t.completionDate) : undefined,
+    projectTitle:    projectMap[t.projectId]?.title          ?? "—",
+    projectSquad:    projectMap[t.projectId]?.squad          ?? "",
+    dueDate:         projectMap[t.projectId]?.target_end_date ?? "",
+  }));
 
   return (
     <div className="space-y-6">

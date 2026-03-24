@@ -21,7 +21,6 @@ import type { Translations } from "@/locales/en";
 import TaskDetailModal, { type Comment } from "@/components/TaskDetailModal";
 import Avatar from "@/components/Avatar";
 import type { Subtask, SubtaskStatus } from "@/lib/subtasks";
-import { MOCK_SUBTASKS }               from "@/lib/subtasks";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -122,8 +121,9 @@ function computeMetrics(tasks: Task[], project: ProjectInfo): Metrics {
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
-  initialTasks:  Task[];
-  projectId:     string;
+  initialTasks:    Task[];
+  initialSubtasks: Record<string, Subtask[]>;
+  projectId:       string;
   users:         string[];
   project:       ProjectInfo;
   currentUser?:  string;
@@ -136,6 +136,7 @@ interface Props {
 
 export default function TaskBoard({
   initialTasks,
+  initialSubtasks,
   projectId,
   users,
   project,
@@ -183,13 +184,8 @@ export default function TaskBoard({
   // Comments stored per taskId
   const [comments, setComments] = useState<Record<string, Comment[]>>({});
 
-  // ── Subtask state ─────────────────────────────────────────────────────────
-  const [subtasks, setSubtasks] = useState<Record<string, Subtask[]>>(() =>
-    (initialTasks.map(t => t.id)).reduce<Record<string, Subtask[]>>((acc, id) => {
-      acc[id] = MOCK_SUBTASKS.filter(st => st.task_id === id);
-      return acc;
-    }, {})
-  );
+  // ── Subtask state (seeded from DB via initialSubtasks) ────────────────────
+  const [subtasks, setSubtasks] = useState<Record<string, Subtask[]>>(initialSubtasks);
   const [expandedSubtasks, setExpandedSubtasks] = useState<Set<string>>(new Set());
 
   // Create-form state
@@ -217,26 +213,33 @@ export default function TaskBoard({
     setDraggedId(null);
     const { active, over } = event;
     if (!over) return;
+    const taskId    = String(active.id);
     const newStatus = over.id as TaskStatus;
+    const task      = tasks.find((t) => t.id === taskId);
+    if (!task || task.status === newStatus) return;
+    const dates = applyStatusDates(task, newStatus);
     setTasks((prev) =>
-      prev.map((t) =>
-        t.id === String(active.id) && t.status !== newStatus
-          ? { ...t, status: newStatus, ...applyStatusDates(t, newStatus) }
-          : t,
-      ),
+      prev.map((t) => t.id === taskId ? { ...t, status: newStatus, ...dates } : t),
     );
-    // Sync selected task if it was moved
     setSelectedTask((prev) =>
-      prev && prev.id === String(active.id) ? { ...prev, status: newStatus, ...applyStatusDates(prev, newStatus) } : prev,
+      prev?.id === taskId ? { ...prev, status: newStatus, ...dates } : prev,
     );
+    // Persist — fire and forget
+    void fetch(`/api/tasks/${taskId}`, {
+      method:  "PUT",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ status: newStatus, ...dates }),
+    });
   }
 
   // ── Create ───────────────────────────────────────────────────────────────
-  function handleCreate(e: React.FormEvent) {
+  async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (!formTitle.trim()) return;
-    const task: Task = {
-      id:              String(Date.now()),
+    // Optimistic: add with a temp id so the board responds instantly
+    const tempId  = `tmp-${Date.now()}`;
+    const tempTask: Task = {
+      id:              tempId,
       title:           formTitle.trim(),
       description:     formDesc.trim(),
       project_id:      projectId,
@@ -248,8 +251,39 @@ export default function TaskBoard({
       priority:        formPriority,
       target_end_date: formTargetEndDate || undefined,
     };
-    setTasks([task, ...tasks]);
+    setTasks((prev) => [tempTask, ...prev]);
     cancelForm();
+    try {
+      const res = await fetch("/api/tasks", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({
+          title:           tempTask.title,
+          description:     tempTask.description,
+          project_id:      projectId,
+          assigned_to:     tempTask.assigned_to,
+          status:          tempTask.status,
+          type:            tempTask.type,
+          priority:        tempTask.priority,
+          target_end_date: tempTask.target_end_date,
+        }),
+      });
+      if (res.ok) {
+        const created: Task = await res.json();
+        // Swap temp id for real server id
+        setTasks((prev) => prev.map((t) => t.id === tempId ? created : t));
+        setSubtasks((prev) => {
+          const next = { ...prev };
+          next[created.id] = next[tempId] ?? [];
+          delete next[tempId];
+          return next;
+        });
+      } else {
+        setTasks((prev) => prev.filter((t) => t.id !== tempId));
+      }
+    } catch {
+      setTasks((prev) => prev.filter((t) => t.id !== tempId));
+    }
   }
 
   function cancelForm() {
@@ -260,31 +294,42 @@ export default function TaskBoard({
 
   // ── Move (quick advance) ─────────────────────────────────────────────────
   function moveTask(id: string, next: TaskStatus) {
-    setTasks(tasks.map((t) => (t.id === id ? { ...t, status: next, ...applyStatusDates(t, next) } : t)));
+    const task  = tasks.find((t) => t.id === id);
+    const dates = task ? applyStatusDates(task, next) : {};
+    setTasks(tasks.map((t) => t.id === id ? { ...t, status: next, ...dates } : t));
+    void fetch(`/api/tasks/${id}`, {
+      method:  "PUT",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ status: next, ...dates }),
+    });
   }
 
   // ── Task edit (from modal) ───────────────────────────────────────────────
-  function handleTaskSave(updated: Task) {
-    setTasks((prev) => prev.map((t) => {
-      if (t.id !== updated.id) return t;
-      const today  = new Date().toISOString().slice(0, 10);
-      const merged = { ...updated };
-      if (updated.status === "in_progress" && t.status !== "in_progress" && !merged.start_date) {
-        merged.start_date = today;
-      }
-      if (updated.status === "done" && t.status !== "done" && !merged.completion_date) {
-        merged.completion_date = today;
-      }
-      return merged;
-    }));
-    setSelectedTask(updated);
+  async function handleTaskSave(updated: Task) {
+    const today  = new Date().toISOString().slice(0, 10);
+    const prev   = tasks.find((t) => t.id === updated.id);
+    const merged = { ...updated };
+    if (updated.status === "in_progress" && prev?.status !== "in_progress" && !merged.start_date) {
+      merged.start_date = today;
+    }
+    if (updated.status === "done" && prev?.status !== "done" && !merged.completion_date) {
+      merged.completion_date = today;
+    }
+    setTasks((ts) => ts.map((t) => t.id === updated.id ? merged : t));
+    setSelectedTask(merged);
+    await fetch(`/api/tasks/${updated.id}`, {
+      method:  "PUT",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(merged),
+    });
   }
 
   // ── Delete task (admin only) ─────────────────────────────────────────────
-  function handleTaskDelete(taskId: string) {
+  async function handleTaskDelete(taskId: string) {
     setTasks((prev) => prev.filter((t) => t.id !== taskId));
     setSubtasks((prev) => { const next = { ...prev }; delete next[taskId]; return next; });
     setSelectedTask(null);
+    await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
   }
 
   // ── Subtask handlers ───────────────────────────────────────────────────────
@@ -296,27 +341,51 @@ export default function TaskBoard({
     });
   }
 
-  function handleAddSubtask(taskId: string, st: Subtask) {
-    setSubtasks((prev) => ({
-      ...prev,
-      [taskId]: [...(prev[taskId] ?? []), st],
-    }));
+  async function handleAddSubtask(taskId: string, st: Subtask) {
+    // Optimistic
+    setSubtasks((prev) => ({ ...prev, [taskId]: [...(prev[taskId] ?? []), st] }));
+    try {
+      const res = await fetch("/api/subtasks", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({
+          task_id:       taskId,
+          title:         st.title,
+          description:   st.description,
+          status:        st.status,
+          assigned_user: st.assigned_user,
+        }),
+      });
+      if (res.ok) {
+        const created: Subtask = await res.json();
+        setSubtasks((prev) => ({
+          ...prev,
+          [taskId]: (prev[taskId] ?? []).map((s) => s.id === st.id ? created : s),
+        }));
+      }
+    } catch { /* keep optimistic */ }
   }
 
-  function handleUpdateSubtask(updated: Subtask) {
+  async function handleUpdateSubtask(updated: Subtask) {
     setSubtasks((prev) => ({
       ...prev,
       [updated.task_id]: (prev[updated.task_id] ?? []).map((st) =>
         st.id === updated.id ? updated : st
       ),
     }));
+    await fetch(`/api/subtasks/${updated.id}`, {
+      method:  "PUT",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(updated),
+    });
   }
 
-  function handleDeleteSubtask(subtaskId: string, taskId: string) {
+  async function handleDeleteSubtask(subtaskId: string, taskId: string) {
     setSubtasks((prev) => ({
       ...prev,
       [taskId]: (prev[taskId] ?? []).filter((st) => st.id !== subtaskId),
     }));
+    await fetch(`/api/subtasks/${subtaskId}`, { method: "DELETE" });
   }
 
   function handleUpdateSubtaskStatus(subtaskId: string, taskId: string, newStatus: SubtaskStatus) {
@@ -326,6 +395,11 @@ export default function TaskBoard({
         st.id === subtaskId ? { ...st, status: newStatus } : st
       ),
     }));
+    void fetch(`/api/subtasks/${subtaskId}`, {
+      method:  "PUT",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ status: newStatus }),
+    });
   }
 
   // ── Add comment (from modal) ─────────────────────────────────────────────
