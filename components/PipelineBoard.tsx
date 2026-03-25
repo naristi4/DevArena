@@ -622,30 +622,6 @@ function PipelineCard({
       </Link>
 
 
-      {/* Progress bar — active_development only, based on task completion */}
-      {item.status === "active_development" && (() => {
-        const total = item.totalTasks     ?? 0;
-        const done  = item.completedTasks ?? 0;
-        const pct   = total === 0 ? 0 : Math.round((done / total) * 100);
-        return (
-          <div className="mb-3">
-            <div className="flex justify-between text-[10px] text-slate-500 mb-1">
-              <span>Progress</span>
-              <span>{pct}%</span>
-            </div>
-            <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-amber-500 rounded-full transition-all duration-300"
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-            {total > 0 && (
-              <p className="text-[10px] text-slate-600 mt-0.5">{done}/{total} tasks done</p>
-            )}
-          </div>
-        );
-      })()}
-
       {/* Footer */}
       <div className="flex items-center justify-between border-t border-slate-800 pt-3 mt-2">
         <div className="flex items-center gap-2">
@@ -668,6 +644,30 @@ function PipelineCard({
           )}
         </div>
       </div>
+
+      {/* Progress bar — active_development only, full-width at card bottom */}
+      {item.status === "active_development" && (() => {
+        const total = item.totalTasks     ?? 0;
+        const done  = item.completedTasks ?? 0;
+        const pct   = total === 0 ? 0 : Math.round((done / total) * 100);
+        return (
+          <div className="mt-3 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wide">Progress</span>
+              <span className="text-[11px] font-bold text-amber-400">{pct}%</span>
+            </div>
+            <div className="w-full h-2.5 bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-amber-500 rounded-full transition-all duration-500"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <p className="text-[10px] text-slate-500 mt-1">
+              {total === 0 ? "No tasks yet" : `${done} of ${total} tasks done`}
+            </p>
+          </div>
+        );
+      })()}
     </div>
   );
 }
