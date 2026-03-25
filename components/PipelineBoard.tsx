@@ -621,20 +621,6 @@ function PipelineCard({
         {item.title}
       </Link>
 
-      {/* Status tag */}
-      {(item.status === "ideation" || item.status === "technical_design") && (
-        <div className="flex items-center gap-2 mb-3">
-          {item.prd_url ? (
-            <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded font-medium">
-              Sponsor Review
-            </span>
-          ) : (
-            <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-medium">
-              PRD Drafting
-            </span>
-          )}
-        </div>
-      )}
 
       {/* Progress bar — active_development only, based on task completion */}
       {item.status === "active_development" && (() => {
