@@ -25,6 +25,7 @@ export default async function PipelinePage() {
       include: {
         squad:     true,
         createdBy: { select: { id: true, name: true } },
+        tasks:     { select: { status: true } },   // for progress bar
       },
       orderBy: { createdAt: "desc" },
     }).catch(() => []),   // empty list if Project table doesn't exist yet
@@ -39,7 +40,7 @@ export default async function PipelinePage() {
     id:              p.id,
     title:           p.title,
     description:     p.description    ?? "",
-    status:          p.status,
+    status:          p.status         as PipelineItem["status"],
     squad:           p.squad?.name    ?? "",
     impact:          (p.impact        ?? "Calidad") as PipelineItem["impact"],
     created_by:      p.createdBy?.name ?? currentUser,
@@ -51,6 +52,8 @@ export default async function PipelinePage() {
     target_end_date: fmtDate(p.targetEndDate),
     completion_date: p.completionDate ? fmtDate(p.completionDate) : undefined,
     attachments:     [],
+    totalTasks:      p.tasks.length,
+    completedTasks:  p.tasks.filter((t) => t.status === "done").length,
   }));
 
   // Scope to user's squad for Squad Members
@@ -61,32 +64,6 @@ export default async function PipelinePage() {
   // Load active tasks from DB, scoped to visible projects
   const visibleProjectIds = squadItems.map((p) => p.id);
   const projectMap        = Object.fromEntries(squadItems.map((p) => [p.id, p]));
-
-  // Fetch task counts per project for progress bars
-  const [totalTaskCounts, doneCounts] = visibleProjectIds.length > 0
-    ? await Promise.all([
-        prisma.task.groupBy({
-          by: ["projectId"],
-          where: { projectId: { in: visibleProjectIds } },
-          _count: { id: true },
-        }).catch(() => []),
-        prisma.task.groupBy({
-          by: ["projectId"],
-          where: { projectId: { in: visibleProjectIds }, status: "done" },
-          _count: { id: true },
-        }).catch(() => []),
-      ])
-    : [[], []];
-
-  const totalMap = Object.fromEntries(totalTaskCounts.map((r) => [r.projectId, r._count.id]));
-  const doneMap  = Object.fromEntries(doneCounts.map((r) => [r.projectId, r._count.id]));
-
-  // Attach task counts to project items
-  const itemsWithProgress: typeof squadItems = squadItems.map((p) => ({
-    ...p,
-    totalTasks:     totalMap[p.id] ?? 0,
-    completedTasks: doneMap[p.id]  ?? 0,
-  }));
 
   const dbActiveTasks = visibleProjectIds.length > 0
     ? await prisma.task.findMany({
@@ -131,7 +108,7 @@ export default async function PipelinePage() {
       </div>
 
       <PipelineShell
-        initialItems={itemsWithProgress}
+        initialItems={squadItems}
         activeTasks={activeTasks}
         squads={squads}
         users={users}
