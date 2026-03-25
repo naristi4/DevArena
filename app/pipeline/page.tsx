@@ -66,7 +66,7 @@ export default async function PipelinePage() {
     ? await prisma.task.findMany({
         where: {
           projectId: { in: visibleProjectIds },
-          status:    { in: ACTIVE_STATUSES as string[] as never[] },
+          status:    { in: [...ACTIVE_STATUSES] as never[] },
         },
         include: {
           assignee: { select: { name: true } },

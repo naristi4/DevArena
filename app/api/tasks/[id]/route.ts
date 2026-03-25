@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { dbTaskToTask } from "@/app/api/tasks/route";
+import { dbTaskToTask } from "@/lib/dbMappers";
 
 // ─── PUT /api/tasks/:id ───────────────────────────────────────────────────────
 
@@ -32,8 +32,7 @@ export async function PUT(
     actual_time?:     number;
   };
 
-  // Resolve assignee name → id
-  let assigneeId: string | null | undefined = undefined; // undefined = don't change
+  let assigneeId: string | null | undefined = undefined;
   if ("assigned_to" in body) {
     if (!body.assigned_to) {
       assigneeId = null;
@@ -44,25 +43,24 @@ export async function PUT(
   }
 
   const parseDate = (s?: string | null) => {
-    if (s === null) return null;
-    if (s === undefined) return undefined;
+    if (s === null || s === undefined) return s === null ? null : undefined;
     return new Date(s + "T00:00:00");
   };
 
   const updated = await prisma.task.update({
     where: { id },
     data: {
-      ...(body.title        !== undefined && { title:          body.title.trim()                       }),
-      ...(body.description  !== undefined && { description:    body.description                        }),
-      ...(assigneeId        !== undefined && { assigneeId                                              }),
-      ...(body.status       !== undefined && { status:         body.status   as never                  }),
-      ...(body.type         !== undefined && { type:           body.type     as never                  }),
-      ...(body.priority     !== undefined && { priority:       body.priority as never                  }),
-      ...("target_end_date" in body       && { targetEndDate:  parseDate(body.target_end_date)         }),
-      ...("start_date"      in body       && { startDate:      parseDate(body.start_date)              }),
-      ...("completion_date" in body       && { completionDate: parseDate(body.completion_date)         }),
-      ...(body.estimated_time !== undefined && { estimatedTime: body.estimated_time                    }),
-      ...(body.actual_time    !== undefined && { actualTime:    body.actual_time                       }),
+      ...(body.title        !== undefined && { title:          body.title.trim()                }),
+      ...(body.description  !== undefined && { description:    body.description                 }),
+      ...(assigneeId        !== undefined && { assigneeId                                       }),
+      ...(body.status       !== undefined && { status:         body.status   as never           }),
+      ...(body.type         !== undefined && { type:           body.type     as never           }),
+      ...(body.priority     !== undefined && { priority:       body.priority as never           }),
+      ...("target_end_date" in body       && { targetEndDate:  parseDate(body.target_end_date)  }),
+      ...("start_date"      in body       && { startDate:      parseDate(body.start_date)       }),
+      ...("completion_date" in body       && { completionDate: parseDate(body.completion_date)  }),
+      ...(body.estimated_time !== undefined && { estimatedTime: body.estimated_time             }),
+      ...(body.actual_time    !== undefined && { actualTime:    body.actual_time                }),
     },
     include: { assignee: { select: { name: true } } },
   });

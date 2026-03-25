@@ -20,7 +20,6 @@ import { ACTIVE_STATUSES, applyStatusDates } from "@/lib/tasks";
 import TaskDetailModal, { type Comment } from "@/components/TaskDetailModal";
 import Avatar from "@/components/Avatar";
 import type { Subtask, SubtaskStatus } from "@/lib/subtasks";
-import { MOCK_SUBTASKS }               from "@/lib/subtasks";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -158,12 +157,7 @@ export default function ActiveTasksBoard({
   const [comments, setComments]         = useState<Record<string, Comment[]>>({});
 
   // ── Subtask state ─────────────────────────────────────────────────────────
-  const [subtasks, setSubtasks] = useState<Record<string, Subtask[]>>(() =>
-    initialTasks.reduce<Record<string, Subtask[]>>((acc, t) => {
-      acc[t.id] = MOCK_SUBTASKS.filter(st => st.task_id === t.id);
-      return acc;
-    }, {})
-  );
+  const [subtasks, setSubtasks] = useState<Record<string, Subtask[]>>({});
   const [expandedSubtasks, setExpandedSubtasks] = useState<Set<string>>(new Set());
 
   // ── Filters ─────────────────────────────────────────────────────────────────

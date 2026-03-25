@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { dbSubtaskToSubtask } from "@/app/api/subtasks/route";
+import { dbSubtaskToSubtask } from "@/lib/dbMappers";
 
 // ─── PUT /api/subtasks/:id ────────────────────────────────────────────────────
 
@@ -22,7 +22,6 @@ export async function PUT(
     assigned_user?: string;
   };
 
-  // Resolve assignee
   let assigneeId: string | null | undefined = undefined;
   if ("assigned_user" in body) {
     if (!body.assigned_user) {
@@ -36,10 +35,10 @@ export async function PUT(
   const updated = await prisma.subtask.update({
     where: { id },
     data: {
-      ...(body.title       !== undefined && { title:       body.title.trim()     }),
-      ...(body.description !== undefined && { description: body.description      }),
-      ...(body.status      !== undefined && { status:      body.status as never  }),
-      ...(assigneeId       !== undefined && { assigneeId                         }),
+      ...(body.title       !== undefined && { title:       body.title.trim()    }),
+      ...(body.description !== undefined && { description: body.description     }),
+      ...(body.status      !== undefined && { status:      body.status as never }),
+      ...(assigneeId       !== undefined && { assigneeId                        }),
     },
     include: { assignee: { select: { name: true } } },
   });
