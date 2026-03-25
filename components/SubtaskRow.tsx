@@ -7,9 +7,10 @@ import { useLanguage } from "@/contexts/LanguageContext";
 // ─── Status badge config ──────────────────────────────────────────────────────
 
 const STATUS_BADGE: Record<SubtaskStatus, { bg: string; text: string }> = {
-  todo:        { bg: "bg-slate-700",        text: "text-slate-300"  },
-  in_progress: { bg: "bg-amber-500/20",     text: "text-amber-300"  },
-  done:        { bg: "bg-emerald-500/20",   text: "text-emerald-400"},
+  todo:                  { bg: "bg-slate-700",        text: "text-slate-300"  },
+  in_progress:           { bg: "bg-amber-500/20",     text: "text-amber-300"  },
+  ready_to_be_deployed:  { bg: "bg-blue-500/20",      text: "text-blue-300"   },
+  done:                  { bg: "bg-emerald-500/20",   text: "text-emerald-400"},
 };
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -40,14 +41,15 @@ export default function SubtaskRow({
   const badge = STATUS_BADGE[subtask.status];
 
   const statusLabels: Record<SubtaskStatus, string> = {
-    todo:        st.todo,
-    in_progress: st.inProgress,
-    done:        st.done,
+    todo:                 st.todo,
+    in_progress:          st.inProgress,
+    ready_to_be_deployed: st.readyToDeploy,
+    done:                 st.done,
   };
 
   function cycleStatus() {
     if (!canEditStatus) return;
-    const order: SubtaskStatus[] = ["todo", "in_progress", "done"];
+    const order: SubtaskStatus[] = ["todo", "in_progress", "ready_to_be_deployed", "done"];
     const next = order[(order.indexOf(subtask.status) + 1) % order.length];
     onUpdate({ ...subtask, status: next });
   }
@@ -99,7 +101,7 @@ export default function SubtaskRow({
           ) : (
             <span
               className={`text-xs leading-snug block truncate
-                ${subtask.status === "done" ? "line-through text-slate-500" : "text-slate-200"}
+                ${subtask.status === "done" ? "line-through text-slate-500" : subtask.status === "ready_to_be_deployed" ? "text-blue-200" : "text-slate-200"}
                 ${canEditAll ? "cursor-text hover:text-white" : ""}`}
               onDoubleClick={() => canEditAll && setEditingTitle(true)}
               title={canEditAll ? `${subtask.title} (double-click to edit)` : subtask.title}
@@ -154,6 +156,7 @@ export default function SubtaskRow({
                 >
                   <option value="todo">{st.todo}</option>
                   <option value="in_progress">{st.inProgress}</option>
+                  <option value="ready_to_be_deployed">{st.readyToDeploy}</option>
                   <option value="done">{st.done}</option>
                 </select>
               </div>

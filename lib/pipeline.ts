@@ -60,6 +60,8 @@ export interface PipelineItem {
   start_date:       string;           // "YYYY-MM-DD"
   target_end_date:  string;           // "YYYY-MM-DD" — planned delivery
   completion_date?: string;           // "YYYY-MM-DD" — actual completion (set when done)
+  totalTasks?:      number;           // total tasks in this project
+  completedTasks?:  number;           // tasks with status "done"
 }
 
 // ─── Mock deletion support (in-memory; resets on server restart) ─────────────

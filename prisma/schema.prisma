@@ -197,6 +197,7 @@ enum TaskPriority {
 enum SubtaskStatus {
   todo
   in_progress
+  ready_to_be_deployed
   done
 }
 

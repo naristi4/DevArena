@@ -5,7 +5,7 @@ import type { Task, TaskStatus, TaskType, TaskPriority } from "@/lib/tasks";
 import { useNotifications } from "@/components/NotificationContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import Avatar from "@/components/Avatar";
-import type { Subtask }   from "@/lib/subtasks";
+import type { Subtask, SubtaskStatus } from "@/lib/subtasks";
 import SubtaskRow         from "@/components/SubtaskRow";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -169,7 +169,7 @@ export default function TaskDetailModal({
   const [showSubtaskForm,   setShowSubtaskForm]   = useState(false);
   const [stFormTitle,       setStFormTitle]       = useState("");
   const [stFormUser,        setStFormUser]        = useState(users[0] ?? "");
-  const [stFormStatus,      setStFormStatus]      = useState<"todo" | "in_progress" | "done">("todo");
+  const [stFormStatus,      setStFormStatus]      = useState<SubtaskStatus>("todo");
   const [stFormDescription, setStFormDescription] = useState("");
 
   // Comment state
@@ -436,11 +436,12 @@ export default function TaskDetailModal({
                       <label className="text-[10px] text-slate-500">Status</label>
                       <select
                         value={stFormStatus}
-                        onChange={(e) => setStFormStatus(e.target.value as "todo" | "in_progress" | "done")}
+                        onChange={(e) => setStFormStatus(e.target.value as SubtaskStatus)}
                         className="w-full bg-slate-700 border border-primary/20 rounded px-2 py-1 text-xs text-slate-200 outline-none focus:border-primary/40"
                       >
                         <option value="todo">{t.subtasks.todo}</option>
                         <option value="in_progress">{t.subtasks.inProgress}</option>
+                        <option value="ready_to_be_deployed">{t.subtasks.readyToDeploy}</option>
                         <option value="done">{t.subtasks.done}</option>
                       </select>
                     </div>

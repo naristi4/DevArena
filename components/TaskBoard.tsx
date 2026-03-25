@@ -188,6 +188,9 @@ export default function TaskBoard({
   const [subtasks, setSubtasks] = useState<Record<string, Subtask[]>>(initialSubtasks);
   const [expandedSubtasks, setExpandedSubtasks] = useState<Set<string>>(new Set());
 
+  // Filter state
+  const [filterType, setFilterType] = useState<TaskType | "all">("all");
+
   // Create-form state
   const [formTitle,         setFormTitle]         = useState("");
   const [formDesc,          setFormDesc]          = useState("");
@@ -430,7 +433,7 @@ export default function TaskBoard({
       )}
 
       {/* ── Toolbar ───────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-bold text-slate-100">Task Board</h2>
           <p className="text-sm text-slate-400">
@@ -443,15 +446,38 @@ export default function TaskBoard({
             </span>
           </p>
         </div>
-        {canEdit && (
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
-          >
-            <span className="material-symbols-outlined text-[18px]">add</span>
-            {t.tasks.detail.newTask}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Type filter chips */}
+          <div className="flex items-center gap-1">
+            {(["all", ...TYPE_OPTIONS] as const).map((tp) => {
+              const active = filterType === tp;
+              const cls =
+                tp === "all"       ? (active ? "bg-slate-600 text-white"       : "bg-slate-800 text-slate-400 hover:bg-slate-700") :
+                tp === "bug"       ? (active ? "bg-red-500/30 text-red-300"    : "bg-slate-800 text-slate-400 hover:bg-red-500/10 hover:text-red-400") :
+                tp === "iteration" ? (active ? "bg-purple-500/30 text-purple-300" : "bg-slate-800 text-slate-400 hover:bg-purple-500/10 hover:text-purple-400") :
+                                     (active ? "bg-slate-600 text-white"       : "bg-slate-800 text-slate-400 hover:bg-slate-700");
+              const label = tp === "all" ? "All" : TYPE_LABELS_T[tp];
+              return (
+                <button
+                  key={tp}
+                  onClick={() => setFilterType(tp)}
+                  className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-colors ${cls}`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          {canEdit && (
+            <button
+              onClick={() => setShowForm(!showForm)}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+            >
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              {t.tasks.detail.newTask}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Create task modal ─────────────────────────────────────────────── */}
@@ -537,17 +563,31 @@ export default function TaskBoard({
                 </div>
               </div>
 
-              {/* Target delivery date */}
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">
-                  {t.tasks.detail.targetEndDate}
-                </label>
-                <input
-                  type="date"
-                  value={formTargetEndDate}
-                  onChange={(e) => setFormTargetEndDate(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-primary/20 bg-slate-800 text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent [color-scheme:dark]"
-                />
+              {/* Type + Target delivery date row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                    {t.tasks.detail.type}
+                  </label>
+                  <select
+                    value={formType}
+                    onChange={(e) => setFormType(e.target.value as TaskType)}
+                    className="w-full px-3 py-2 text-sm border border-primary/20 bg-slate-800 text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  >
+                    {TYPE_OPTIONS.map((tp) => <option key={tp} value={tp}>{TYPE_LABELS_T[tp]}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                    {t.tasks.detail.targetEndDate}
+                  </label>
+                  <input
+                    type="date"
+                    value={formTargetEndDate}
+                    onChange={(e) => setFormTargetEndDate(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-primary/20 bg-slate-800 text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent [color-scheme:dark]"
+                  />
+                </div>
               </div>
 
               {/* Footer buttons */}
@@ -579,7 +619,7 @@ export default function TaskBoard({
         <div className="overflow-x-auto pb-4 custom-scrollbar">
           <div className="flex gap-5 min-w-max">
             {COLUMNS.map(({ status, color, icon }) => {
-              const cards    = tasks.filter((t) => t.status === status);
+              const cards    = tasks.filter((t) => t.status === status && (filterType === "all" || t.type === filterType));
               const colLabel = COLUMN_LABELS[status];
               const badgeCls =
                 status === "in_progress" ? "bg-primary text-white"
@@ -893,9 +933,9 @@ function TaskCard({
             </div>
           )}
           <span className={
-            taskType === "bug"
-              ? "bg-red-500/15 px-2 py-0.5 rounded text-[10px] font-bold text-red-400 uppercase"
-              : "bg-primary/20 px-2 py-0.5 rounded text-[10px] font-bold text-primary uppercase"
+            taskType === "bug"       ? "bg-red-500/15 px-2 py-0.5 rounded text-[10px] font-bold text-red-400 uppercase" :
+            taskType === "iteration" ? "bg-purple-500/15 px-2 py-0.5 rounded text-[10px] font-bold text-purple-400 uppercase" :
+                                       "bg-slate-700 px-2 py-0.5 rounded text-[10px] font-bold text-slate-300 uppercase"
           }>
             {typeLabels[taskType] ?? taskType.charAt(0).toUpperCase() + taskType.slice(1)}
           </span>
@@ -941,10 +981,12 @@ function TaskCard({
                 <div className="mt-2 space-y-1">
                   {taskSubtasks.map((st) => {
                     const dotColor =
-                      st.status === "done"        ? "bg-emerald-500" :
-                      st.status === "in_progress" ? "bg-amber-400"   : "bg-slate-500";
+                      st.status === "done"               ? "bg-emerald-500" :
+                      st.status === "ready_to_be_deployed" ? "bg-blue-400"  :
+                      st.status === "in_progress"        ? "bg-amber-400"   : "bg-slate-500";
                     const nextStatus: Record<string, SubtaskStatus> = {
-                      todo: "in_progress", in_progress: "done", done: "todo",
+                      todo: "in_progress", in_progress: "ready_to_be_deployed",
+                      ready_to_be_deployed: "done", done: "todo",
                     };
                     return (
                       <div key={st.id} className="flex items-center gap-1.5 pl-1">
@@ -956,7 +998,7 @@ function TaskCard({
                           disabled={!canEditSubtasks}
                           className={`size-2 rounded-full shrink-0 ${dotColor} ${canEditSubtasks ? "cursor-pointer hover:opacity-70" : "cursor-default"}`}
                         />
-                        <span className={`text-[10px] leading-tight flex-1 min-w-0 truncate ${st.status === "done" ? "line-through text-slate-600" : "text-slate-400"}`}>
+                        <span className={`text-[10px] leading-tight flex-1 min-w-0 truncate ${st.status === "done" ? "line-through text-slate-600" : st.status === "ready_to_be_deployed" ? "text-blue-300" : "text-slate-400"}`}>
                           {st.title}
                         </span>
                       </div>

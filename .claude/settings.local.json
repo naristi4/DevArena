@@ -75,7 +75,8 @@
       "Bash(/Users/nataliaaristazabal/.nvm/versions/node/v24.14.0/bin/node /Users/nataliaaristazabal/.nvm/versions/node/v24.14.0/bin/npm install prisma @prisma/client bcryptjs)",
       "Bash(PATH=\"/Users/nataliaaristazabal/.nvm/versions/node/v24.14.0/bin:$PATH\" /Users/nataliaaristazabal/.nvm/versions/node/v24.14.0/bin/node /Users/nataliaaristazabal/.nvm/versions/node/v24.14.0/bin/npm install prisma @prisma/client bcryptjs)",
       "Bash(curl -s -X POST http://localhost:3000/api/users -H \"Content-Type: application/json\" -d '{\"\"\"\"name\"\"\"\":\"\"\"\"Test User\"\"\"\",\"\"\"\"email\"\"\"\":\"\"\"\"test_diag@melonn.com\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"demo1234\"\"\"\",\"\"\"\"role\"\"\"\":\"\"\"\"SquadMember\"\"\"\",\"\"\"\"position\"\"\"\":\"\"\"\"Developer\"\"\"\",\"\"\"\"squadId\"\"\"\":null,\"\"\"\"avatarUrl\"\"\"\":null}')",
-      "Bash(node -e \":*)"
+      "Bash(node -e \":*)",
+      "Bash(npx prisma:*)"
     ]
   }
 }

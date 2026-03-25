@@ -741,12 +741,13 @@ function ActiveTaskCard({
                           <div className="mt-2 space-y-1">
                             {(taskSubtasks ?? []).map((st) => {
                               const dotColor =
-                                st.status === "done"        ? "bg-emerald-500" :
-                                st.status === "in_progress" ? "bg-amber-400"   : "bg-slate-500";
+                                st.status === "done"                 ? "bg-emerald-500" :
+                                st.status === "ready_to_be_deployed" ? "bg-blue-400"    :
+                                st.status === "in_progress"          ? "bg-amber-400"   : "bg-slate-500";
                               return (
                                 <div key={st.id} className="flex items-center gap-1.5 pl-1">
                                   <span className={`size-2 rounded-full shrink-0 ${dotColor}`} />
-                                  <span className={`text-[10px] leading-tight flex-1 min-w-0 truncate ${st.status === "done" ? "line-through text-slate-600" : "text-slate-400"}`}>
+                                  <span className={`text-[10px] leading-tight flex-1 min-w-0 truncate ${st.status === "done" ? "line-through text-slate-600" : st.status === "ready_to_be_deployed" ? "text-blue-300" : "text-slate-400"}`}>
                                     {st.title}
                                   </span>
                                 </div>

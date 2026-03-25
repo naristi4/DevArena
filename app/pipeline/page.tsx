@@ -62,6 +62,32 @@ export default async function PipelinePage() {
   const visibleProjectIds = squadItems.map((p) => p.id);
   const projectMap        = Object.fromEntries(squadItems.map((p) => [p.id, p]));
 
+  // Fetch task counts per project for progress bars
+  const [totalTaskCounts, doneCounts] = visibleProjectIds.length > 0
+    ? await Promise.all([
+        prisma.task.groupBy({
+          by: ["projectId"],
+          where: { projectId: { in: visibleProjectIds } },
+          _count: { id: true },
+        }).catch(() => []),
+        prisma.task.groupBy({
+          by: ["projectId"],
+          where: { projectId: { in: visibleProjectIds }, status: "done" },
+          _count: { id: true },
+        }).catch(() => []),
+      ])
+    : [[], []];
+
+  const totalMap = Object.fromEntries(totalTaskCounts.map((r) => [r.projectId, r._count.id]));
+  const doneMap  = Object.fromEntries(doneCounts.map((r) => [r.projectId, r._count.id]));
+
+  // Attach task counts to project items
+  const itemsWithProgress: typeof squadItems = squadItems.map((p) => ({
+    ...p,
+    totalTasks:     totalMap[p.id] ?? 0,
+    completedTasks: doneMap[p.id]  ?? 0,
+  }));
+
   const dbActiveTasks = visibleProjectIds.length > 0
     ? await prisma.task.findMany({
         where: {
@@ -105,7 +131,7 @@ export default async function PipelinePage() {
       </div>
 
       <PipelineShell
-        initialItems={squadItems}
+        initialItems={itemsWithProgress}
         activeTasks={activeTasks}
         squads={squads}
         users={users}

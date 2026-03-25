@@ -636,17 +636,29 @@ function PipelineCard({
         </div>
       )}
 
-      {/* Progress bar for technical_design */}
-      {item.status === "technical_design" && (
-        <div className="mb-3">
-          <div className="flex justify-between text-[10px] text-slate-500 mb-1">
-            <span>Spec Status</span><span>65%</span>
+      {/* Progress bar — active_development only, based on task completion */}
+      {item.status === "active_development" && (() => {
+        const total = item.totalTasks     ?? 0;
+        const done  = item.completedTasks ?? 0;
+        const pct   = total === 0 ? 0 : Math.round((done / total) * 100);
+        return (
+          <div className="mb-3">
+            <div className="flex justify-between text-[10px] text-slate-500 mb-1">
+              <span>Progress</span>
+              <span>{pct}%</span>
+            </div>
+            <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-amber-500 rounded-full transition-all duration-300"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            {total > 0 && (
+              <p className="text-[10px] text-slate-600 mt-0.5">{done}/{total} tasks done</p>
+            )}
           </div>
-          <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
-            <div className="bg-emerald-500 h-full w-[65%]" />
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Footer */}
       <div className="flex items-center justify-between border-t border-slate-800 pt-3 mt-2">

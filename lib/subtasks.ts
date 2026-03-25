@@ -2,7 +2,7 @@
 // Subtasks are execution-level breakdowns of a Task.
 // Timeline and priority are managed at the Task level only.
 
-export type SubtaskStatus = "todo" | "in_progress" | "done";
+export type SubtaskStatus = "todo" | "in_progress" | "ready_to_be_deployed" | "done";
 
 export interface Subtask {
   id:            string;
