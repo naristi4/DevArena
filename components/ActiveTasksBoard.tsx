@@ -16,8 +16,9 @@ import {
 } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import type { Task, TaskStatus, TaskPriority, ActiveStatus } from "@/lib/tasks";
-import { ACTIVE_STATUSES, applyStatusDates } from "@/lib/tasks";
+import { ACTIVE_STATUSES, applyStatusDates, getDatePrompt } from "@/lib/tasks";
 import TaskDetailModal, { type Comment } from "@/components/TaskDetailModal";
+import DateConfirmationModal from "@/components/DateConfirmationModal";
 import Avatar from "@/components/Avatar";
 import type { Subtask, SubtaskStatus } from "@/lib/subtasks";
 
@@ -156,6 +157,10 @@ export default function ActiveTasksBoard({
   const [draggedId, setDraggedId]       = useState<string | null>(null);
   const [comments, setComments]         = useState<Record<string, Comment[]>>({});
 
+  // Date confirmation modal state (null = hidden)
+  type DateModal = { title: string; message: string; fieldLabel: string; onConfirm: (d: string) => void };
+  const [dateModal, setDateModal] = useState<DateModal | null>(null);
+
   // ── Subtask state ─────────────────────────────────────────────────────────
   const [subtasks, setSubtasks] = useState<Record<string, Subtask[]>>({});
   const [expandedSubtasks, setExpandedSubtasks] = useState<Set<string>>(new Set());
@@ -190,48 +195,89 @@ export default function ActiveTasksBoard({
     setDraggedId(null);
     const { active, over } = event;
     if (!over) return;
-    // Guard: Squad Members can only move their own tasks
     const movedTask = tasks.find((t) => t.id === String(active.id));
     if (!movedTask) return;
     if (!isAdmin && movedTask.assigned_to !== sessionUser) return;
     const newStatus = over.id as TaskStatus;
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === String(active.id) && t.status !== newStatus
-          ? { ...t, status: newStatus, ...applyStatusDates(t, newStatus) }
-          : t,
-      ),
-    );
-    setSelectedTask((prev) =>
-      prev && prev.id === String(active.id) ? { ...prev, status: newStatus, ...applyStatusDates(prev, newStatus) } : prev,
-    );
+    if (movedTask.status === newStatus) return;
+
+    const prompt = getDatePrompt(movedTask, newStatus);
+    if (prompt) {
+      setDateModal({
+        title:      prompt.title,
+        message:    prompt.message,
+        fieldLabel: prompt.fieldLabel,
+        onConfirm: (date) => {
+          const withDate = { ...movedTask, [prompt.field]: date };
+          const dates    = applyStatusDates(withDate, newStatus);
+          setTasks((prev) => prev.map((t) => t.id === movedTask.id ? { ...withDate, status: newStatus, ...dates } : t));
+          setSelectedTask((prev) => prev?.id === movedTask.id ? { ...withDate, status: newStatus, ...dates } : prev);
+          void fetch(`/api/tasks/${movedTask.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: newStatus, ...dates, [prompt.field]: date }) });
+          setDateModal(null);
+        },
+      });
+      return;
+    }
+
+    const dates = applyStatusDates(movedTask, newStatus);
+    setTasks((prev) => prev.map((t) => t.id === movedTask.id ? { ...t, status: newStatus, ...dates } : t));
+    setSelectedTask((prev) => prev?.id === movedTask.id ? { ...prev, status: newStatus, ...dates } : prev);
+    void fetch(`/api/tasks/${movedTask.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: newStatus, ...dates }) });
   }
 
   // ── Quick-advance (→ Next Status button on card) ────────────────────────────
   function moveTask(id: string, next: TaskStatus) {
-    setTasks((prev) => prev.map((t) => t.id === id ? { ...t, status: next, ...applyStatusDates(t, next) } : t));
+    const task = tasks.find((t) => t.id === id);
+    if (!task) return;
+
+    const prompt = getDatePrompt(task, next);
+    if (prompt) {
+      setDateModal({
+        title:      prompt.title,
+        message:    prompt.message,
+        fieldLabel: prompt.fieldLabel,
+        onConfirm: (date) => {
+          const withDate = { ...task, [prompt.field]: date };
+          const dates    = applyStatusDates(withDate, next);
+          setTasks((prev) => prev.map((t) => t.id === id ? { ...withDate, status: next, ...dates } : t));
+          void fetch(`/api/tasks/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: next, ...dates, [prompt.field]: date }) });
+          setDateModal(null);
+        },
+      });
+      return;
+    }
+
+    const dates = applyStatusDates(task, next);
+    setTasks((prev) => prev.map((t) => t.id === id ? { ...t, status: next, ...dates } : t));
+    void fetch(`/api/tasks/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: next, ...dates }) });
   }
 
   // ── Modal: save edited task fields ──────────────────────────────────────────
-  // Spread updated (Task) over existing ActiveTask to preserve enriched fields
   function handleTaskSave(updated: Task) {
-    setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id !== updated.id) return t;
-        const today  = new Date().toISOString().slice(0, 10);
-        const merged = { ...t, ...updated };
-        if (updated.status === "in_progress" && t.status !== "in_progress" && !merged.start_date) {
-          merged.start_date = today;
-        }
-        if (updated.status === "done" && t.status !== "done" && !merged.completion_date) {
-          merged.completion_date = today;
-        }
-        return merged;
-      }),
-    );
-    setSelectedTask((prev) =>
-      prev && prev.id === updated.id ? { ...prev, ...updated } : prev,
-    );
+    const prev   = tasks.find((t) => t.id === updated.id);
+    const checkTask: Task = { ...(prev ?? updated), start_date: updated.start_date, completion_date: updated.completion_date };
+    const prompt = prev ? getDatePrompt(checkTask, updated.status) : null;
+
+    if (prompt && prev?.status !== updated.status) {
+      setDateModal({
+        title:      prompt.title,
+        message:    prompt.message,
+        fieldLabel: prompt.fieldLabel,
+        onConfirm: async (date) => {
+          const merged = { ...prev, ...updated, [prompt.field]: date } as ActiveTask;
+          setTasks((ts) => ts.map((t) => t.id === updated.id ? merged : t));
+          setSelectedTask((s) => s?.id === updated.id ? merged : s);
+          setDateModal(null);
+          void fetch(`/api/tasks/${updated.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(merged) });
+        },
+      });
+      return;
+    }
+
+    const merged = { ...prev, ...updated } as ActiveTask;
+    setTasks((ts) => ts.map((t) => t.id === updated.id ? merged : t));
+    setSelectedTask((s) => s?.id === updated.id ? { ...s, ...updated } as ActiveTask : s);
+    void fetch(`/api/tasks/${updated.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(updated) });
   }
 
   // ── Modal: add comment ───────────────────────────────────────────────────────

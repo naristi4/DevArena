@@ -16,9 +16,10 @@ import {
 } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import type { Task, TaskStatus, TaskType, TaskPriority } from "@/lib/tasks";
-import { applyStatusDates } from "@/lib/tasks";
+import { applyStatusDates, getDatePrompt } from "@/lib/tasks";
 import type { Translations } from "@/locales/en";
 import TaskDetailModal, { type Comment } from "@/components/TaskDetailModal";
+import DateConfirmationModal from "@/components/DateConfirmationModal";
 import Avatar from "@/components/Avatar";
 import type { Subtask, SubtaskStatus } from "@/lib/subtasks";
 
@@ -191,6 +192,10 @@ export default function TaskBoard({
   // Filter state
   const [filterType, setFilterType] = useState<TaskType | "all">("all");
 
+  // Date confirmation modal state (null = hidden)
+  type DateModal = { title: string; message: string; fieldLabel: string; onConfirm: (d: string) => void };
+  const [dateModal, setDateModal] = useState<DateModal | null>(null);
+
   // Create-form state
   const [formTitle,         setFormTitle]         = useState("");
   const [formDesc,          setFormDesc]          = useState("");
@@ -220,6 +225,25 @@ export default function TaskBoard({
     const newStatus = over.id as TaskStatus;
     const task      = tasks.find((t) => t.id === taskId);
     if (!task || task.status === newStatus) return;
+
+    const prompt = getDatePrompt(task, newStatus);
+    if (prompt) {
+      setDateModal({
+        title:      prompt.title,
+        message:    prompt.message,
+        fieldLabel: prompt.fieldLabel,
+        onConfirm: (date) => {
+          const withDate = { ...task, [prompt.field]: date };
+          const dates    = applyStatusDates(withDate, newStatus);
+          setTasks((prev) => prev.map((t) => t.id === taskId ? { ...withDate, status: newStatus, ...dates } : t));
+          setSelectedTask((prev) => prev?.id === taskId ? { ...withDate, status: newStatus, ...dates } : prev);
+          void fetch(`/api/tasks/${taskId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: newStatus, ...dates, [prompt.field]: date }) });
+          setDateModal(null);
+        },
+      });
+      return;
+    }
+
     const dates = applyStatusDates(task, newStatus);
     setTasks((prev) =>
       prev.map((t) => t.id === taskId ? { ...t, status: newStatus, ...dates } : t),
@@ -227,7 +251,6 @@ export default function TaskBoard({
     setSelectedTask((prev) =>
       prev?.id === taskId ? { ...prev, status: newStatus, ...dates } : prev,
     );
-    // Persist — fire and forget
     void fetch(`/api/tasks/${taskId}`, {
       method:  "PUT",
       headers: { "Content-Type": "application/json" },
@@ -297,8 +320,27 @@ export default function TaskBoard({
 
   // ── Move (quick advance) ─────────────────────────────────────────────────
   function moveTask(id: string, next: TaskStatus) {
-    const task  = tasks.find((t) => t.id === id);
-    const dates = task ? applyStatusDates(task, next) : {};
+    const task = tasks.find((t) => t.id === id);
+    if (!task) return;
+
+    const prompt = getDatePrompt(task, next);
+    if (prompt) {
+      setDateModal({
+        title:      prompt.title,
+        message:    prompt.message,
+        fieldLabel: prompt.fieldLabel,
+        onConfirm: (date) => {
+          const withDate = { ...task, [prompt.field]: date };
+          const dates    = applyStatusDates(withDate, next);
+          setTasks((prev) => prev.map((t) => t.id === id ? { ...withDate, status: next, ...dates } : t));
+          void fetch(`/api/tasks/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: next, ...dates, [prompt.field]: date }) });
+          setDateModal(null);
+        },
+      });
+      return;
+    }
+
+    const dates = applyStatusDates(task, next);
     setTasks(tasks.map((t) => t.id === id ? { ...t, status: next, ...dates } : t));
     void fetch(`/api/tasks/${id}`, {
       method:  "PUT",
@@ -309,21 +351,33 @@ export default function TaskBoard({
 
   // ── Task edit (from modal) ───────────────────────────────────────────────
   async function handleTaskSave(updated: Task) {
-    const today  = new Date().toISOString().slice(0, 10);
     const prev   = tasks.find((t) => t.id === updated.id);
-    const merged = { ...updated };
-    if (updated.status === "in_progress" && prev?.status !== "in_progress" && !merged.start_date) {
-      merged.start_date = today;
+    // Build a "virtual previous task" to check against — use updated dates (user may have filled them in the modal)
+    const checkTask: Task = { ...(prev ?? updated), start_date: updated.start_date, completion_date: updated.completion_date };
+    const prompt = prev ? getDatePrompt(checkTask, updated.status) : null;
+
+    if (prompt && prev?.status !== updated.status) {
+      setDateModal({
+        title:      prompt.title,
+        message:    prompt.message,
+        fieldLabel: prompt.fieldLabel,
+        onConfirm: async (date) => {
+          const merged = { ...updated, [prompt.field]: date };
+          setTasks((ts) => ts.map((t) => t.id === updated.id ? merged : t));
+          setSelectedTask(merged);
+          setDateModal(null);
+          await fetch(`/api/tasks/${updated.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(merged) });
+        },
+      });
+      return;
     }
-    if (updated.status === "done" && prev?.status !== "done" && !merged.completion_date) {
-      merged.completion_date = today;
-    }
-    setTasks((ts) => ts.map((t) => t.id === updated.id ? merged : t));
-    setSelectedTask(merged);
+
+    setTasks((ts) => ts.map((t) => t.id === updated.id ? updated : t));
+    setSelectedTask(updated);
     await fetch(`/api/tasks/${updated.id}`, {
       method:  "PUT",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify(merged),
+      body:    JSON.stringify(updated),
     });
   }
 
@@ -417,6 +471,17 @@ export default function TaskBoard({
 
   return (
     <div className="space-y-6">
+
+      {/* Date confirmation modal */}
+      {dateModal && (
+        <DateConfirmationModal
+          title={dateModal.title}
+          message={dateModal.message}
+          fieldLabel={dateModal.fieldLabel}
+          onConfirm={dateModal.onConfirm}
+          onCancel={() => setDateModal(null)}
+        />
+      )}
 
       {/* ── Metrics bar ───────────────────────────────────────────────────── */}
       {!hideMetrics && <MetricsBar metrics={metrics} t={t} />}

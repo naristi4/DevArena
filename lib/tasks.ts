@@ -44,12 +44,43 @@ export function applyStatusDates(task: Task, newStatus: TaskStatus): Partial<Tas
     updates.start_date = today;
   }
 
-  // Record when the task is completed (always overwrite on re-done)
-  if (newStatus === "done" && task.status !== "done") {
+  // Record when the task is completed (only set once — preserve any date already confirmed by the user)
+  if (newStatus === "done" && task.status !== "done" && !task.completion_date) {
     updates.completion_date = today;
   }
 
   return updates;
+}
+
+// ─── Date confirmation prompt helper ─────────────────────────────────────────
+// Returns modal config if a date must be confirmed before the transition,
+// or null if the transition can proceed immediately.
+
+export interface DatePrompt {
+  field:      "start_date" | "completion_date";
+  title:      string;
+  message:    string;
+  fieldLabel: string;
+}
+
+export function getDatePrompt(task: Task, newStatus: TaskStatus): DatePrompt | null {
+  if (newStatus === "in_progress" && task.status !== "in_progress" && !task.start_date) {
+    return {
+      field:      "start_date",
+      title:      "Set Task Start Date",
+      message:    "This task is starting. Please confirm the start date.",
+      fieldLabel: "Start Date",
+    };
+  }
+  if (newStatus === "done" && task.status !== "done" && !task.completion_date) {
+    return {
+      field:      "completion_date",
+      title:      "Set Completion Date",
+      message:    "This task is being completed. Please confirm the completion date.",
+      fieldLabel: "Completion Date",
+    };
+  }
+  return null;
 }
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
