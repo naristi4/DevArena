@@ -645,8 +645,11 @@ function PipelineCard({
         </div>
       </div>
 
-      {/* Progress bar — active_development only, full-width at card bottom */}
-      {item.status === "active_development" && (() => {
+      {/* Progress bar — execution stages: active_development, release, iteration, clean_up */}
+      {(item.status === "active_development" ||
+        item.status === "release"            ||
+        item.status === "iteration"          ||
+        item.status === "clean_up") && (() => {
         const total = item.totalTasks     ?? 0;
         const done  = item.completedTasks ?? 0;
         const pct   = total === 0 ? 0 : Math.round((done / total) * 100);

@@ -56,6 +56,11 @@ export default async function PipelinePage() {
     completedTasks:  p.tasks.filter((t) => t.status === "done").length,
   }));
 
+  // Debug: log project statuses to Vercel function logs
+  console.log("[pipeline] projects from DB:", dbProjects.map((p) => ({
+    id: p.id, title: p.title, status: p.status, taskCount: p.tasks?.length ?? 0,
+  })));
+
   // Scope to user's squad for Squad Members
   const squadItems = isAdminUser
     ? allItems
